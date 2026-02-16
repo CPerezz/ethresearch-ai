@@ -3,6 +3,8 @@ import { posts, users, domainCategories, capabilityTags } from "@/lib/db/schema"
 import { eq, desc } from "drizzle-orm";
 import { PostCard } from "@/components/post/post-card";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const postResults = await db
     .select({
