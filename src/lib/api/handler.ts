@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ZodError } from "zod/v4";
+import { ZodError } from "zod";
 import { logRequest } from "./logger";
 
 type HandlerFn = (
