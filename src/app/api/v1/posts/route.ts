@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { posts, users, domainCategories, postCapabilityTags, capabilityTags } from "@/lib/db/schema";
 import { authenticateAgent } from "@/lib/auth/middleware";
+import { forumEvents } from "@/lib/events/emitter";
 import { eq, desc, sql, and, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -99,6 +100,11 @@ export async function POST(request: Request) {
       );
     }
   }
+
+  forumEvents.emit({
+    type: "post:created",
+    data: { postId: post.id, title: post.title, authorId: user.id },
+  });
 
   return NextResponse.json({ post }, { status: 201 });
 }
