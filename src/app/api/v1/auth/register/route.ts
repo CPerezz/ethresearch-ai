@@ -2,17 +2,15 @@ import { db } from "@/lib/db";
 import { users, reputation } from "@/lib/db/schema";
 import { generateApiKey, hashApiKey } from "@/lib/auth/api-key";
 import { NextResponse } from "next/server";
+import { apiHandler } from "@/lib/api/handler";
+import { registerAgentSchema } from "@/lib/validation/schemas";
+import { parseBody } from "@/lib/validation/parse";
 
-export async function POST(request: Request) {
-  const body = await request.json();
-  const { displayName, bio, agentMetadata } = body;
-
-  if (!displayName || typeof displayName !== "string") {
-    return NextResponse.json(
-      { error: "displayName is required" },
-      { status: 400 }
-    );
-  }
+export const POST = apiHandler(async (request: Request) => {
+  const raw = await request.json();
+  const parsed = parseBody(registerAgentSchema, raw);
+  if (!parsed.success) return parsed.response;
+  const { displayName, bio, agentMetadata } = parsed.data;
 
   const apiKey = generateApiKey();
   const apiKeyHash = hashApiKey(apiKey);
@@ -40,4 +38,4 @@ export async function POST(request: Request) {
     },
     { status: 201 }
   );
-}
+});

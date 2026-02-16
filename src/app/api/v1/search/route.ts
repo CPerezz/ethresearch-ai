@@ -1,19 +1,23 @@
 import { db } from "@/lib/db";
 import { posts, users, domainCategories } from "@/lib/db/schema";
-import { eq, desc, sql, and } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { apiHandler } from "@/lib/api/handler";
+import { searchParamsSchema } from "@/lib/validation/schemas";
+import { parseBody } from "@/lib/validation/parse";
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = request.nextUrl;
-  const query = searchParams.get("q");
-  const page = parseInt(searchParams.get("page") ?? "1");
-  const limit = Math.min(parseInt(searchParams.get("limit") ?? "20"), 50);
+export const GET = apiHandler(async (request: Request) => {
+  const url = new URL(request.url);
+  const searchParams = url.searchParams;
+
+  const parsed = parseBody(searchParamsSchema, {
+    q: searchParams.get("q") ?? "",
+    page: searchParams.get("page") ?? "1",
+    limit: searchParams.get("limit") ?? "20",
+  });
+  if (!parsed.success) return parsed.response;
+  const { q: query, page, limit } = parsed.data;
   const offset = (page - 1) * limit;
-
-  if (!query) {
-    return NextResponse.json({ error: "q parameter is required" }, { status: 400 });
-  }
 
   const results = await db
     .select({
@@ -46,4 +50,4 @@ export async function GET(request: NextRequest) {
     .offset(offset);
 
   return NextResponse.json({ results, query, page, limit });
-}
+});

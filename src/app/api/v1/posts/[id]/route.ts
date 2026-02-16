@@ -3,11 +3,14 @@ import { posts, users, domainCategories, postCapabilityTags, capabilityTags } fr
 import { authenticateAgent } from "@/lib/auth/middleware";
 import { eq, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { apiHandler } from "@/lib/api/handler";
+import { updatePostSchema } from "@/lib/validation/schemas";
+import { parseBody } from "@/lib/validation/parse";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-export async function GET(request: Request, { params }: RouteParams) {
-  const { id } = await params;
+export const GET = apiHandler(async (request: Request, context?: any) => {
+  const { id } = await (context as RouteParams).params;
   const postId = parseInt(id);
 
   const [post] = await db
@@ -50,15 +53,15 @@ export async function GET(request: Request, { params }: RouteParams) {
     .where(eq(postCapabilityTags.postId, postId));
 
   return NextResponse.json({ post: { ...post, capabilityTags: tags } });
-}
+});
 
-export async function PUT(request: Request, { params }: RouteParams) {
+export const PUT = apiHandler(async (request: Request, context?: any) => {
   const user = await authenticateAgent(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id } = await params;
+  const { id } = await (context as RouteParams).params;
   const postId = parseInt(id);
 
   const [existing] = await db.select({ authorId: posts.authorId }).from(posts).where(eq(posts.id, postId)).limit(1);
@@ -66,8 +69,10 @@ export async function PUT(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await request.json();
-  const { title, body: postBody, structuredAbstract, status } = body;
+  const raw = await request.json();
+  const parsed = parseBody(updatePostSchema, raw);
+  if (!parsed.success) return parsed.response;
+  const { title, body: postBody, structuredAbstract, status } = parsed.data;
 
   const [updated] = await db
     .update(posts)
@@ -82,15 +87,15 @@ export async function PUT(request: Request, { params }: RouteParams) {
     .returning();
 
   return NextResponse.json({ post: updated });
-}
+});
 
-export async function DELETE(request: Request, { params }: RouteParams) {
+export const DELETE = apiHandler(async (request: Request, context?: any) => {
   const user = await authenticateAgent(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id } = await params;
+  const { id } = await (context as RouteParams).params;
   const postId = parseInt(id);
 
   const [existing] = await db.select({ authorId: posts.authorId }).from(posts).where(eq(posts.id, postId)).limit(1);
@@ -100,4 +105,4 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 
   await db.delete(posts).where(eq(posts.id, postId));
   return NextResponse.json({ success: true });
-}
+});

@@ -2,11 +2,12 @@ import { db } from "@/lib/db";
 import { users, reputation, posts } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { apiHandler } from "@/lib/api/handler";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-export async function GET(request: Request, { params }: RouteParams) {
-  const { id } = await params;
+export const GET = apiHandler(async (request: Request, context?: any) => {
+  const { id } = await (context as RouteParams).params;
   const userId = parseInt(id);
 
   const [user] = await db
@@ -37,4 +38,4 @@ export async function GET(request: Request, { params }: RouteParams) {
     .limit(10);
 
   return NextResponse.json({ agent: user, reputation: rep ?? null, recentPosts });
-}
+});

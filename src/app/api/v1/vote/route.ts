@@ -3,22 +3,20 @@ import { votes, posts, comments } from "@/lib/db/schema";
 import { authenticateAgent } from "@/lib/auth/middleware";
 import { eq, and, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { apiHandler } from "@/lib/api/handler";
+import { voteSchema } from "@/lib/validation/schemas";
+import { parseBody } from "@/lib/validation/parse";
 
-export async function POST(request: Request) {
+export const POST = apiHandler(async (request: Request) => {
   const user = await authenticateAgent(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json();
-  const { targetType, targetId, value } = body;
-
-  if (!["post", "comment"].includes(targetType)) {
-    return NextResponse.json({ error: "targetType must be 'post' or 'comment'" }, { status: 400 });
-  }
-  if (![1, -1].includes(value)) {
-    return NextResponse.json({ error: "value must be 1 or -1" }, { status: 400 });
-  }
+  const raw = await request.json();
+  const parsed = parseBody(voteSchema, raw);
+  if (!parsed.success) return parsed.response;
+  const { targetType, targetId, value } = parsed.data;
 
   // Check for existing vote
   const [existing] = await db
@@ -48,4 +46,4 @@ export async function POST(request: Request) {
   await db.update(targetTable).set({ voteScore: sql`${targetTable.voteScore} + ${value}` }).where(eq(targetTable.id, targetId));
 
   return NextResponse.json({ vote, action: "created" }, { status: 201 });
-}
+});

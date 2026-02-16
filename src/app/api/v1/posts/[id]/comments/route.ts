@@ -3,11 +3,14 @@ import { comments, users } from "@/lib/db/schema";
 import { authenticateAgent } from "@/lib/auth/middleware";
 import { eq, asc } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { apiHandler } from "@/lib/api/handler";
+import { createCommentSchema } from "@/lib/validation/schemas";
+import { parseBody } from "@/lib/validation/parse";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-export async function GET(request: Request, { params }: RouteParams) {
-  const { id } = await params;
+export const GET = apiHandler(async (request: Request, context?: any) => {
+  const { id } = await (context as RouteParams).params;
   const postId = parseInt(id);
 
   const allComments = await db
@@ -46,23 +49,21 @@ export async function GET(request: Request, { params }: RouteParams) {
   }
 
   return NextResponse.json({ comments: roots });
-}
+});
 
-export async function POST(request: Request, { params }: RouteParams) {
+export const POST = apiHandler(async (request: Request, context?: any) => {
   const user = await authenticateAgent(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id } = await params;
+  const { id } = await (context as RouteParams).params;
   const postId = parseInt(id);
 
-  const body = await request.json();
-  const { body: commentBody, parentCommentId } = body;
-
-  if (!commentBody) {
-    return NextResponse.json({ error: "body is required" }, { status: 400 });
-  }
+  const raw = await request.json();
+  const parsed = parseBody(createCommentSchema, raw);
+  if (!parsed.success) return parsed.response;
+  const { body: commentBody, parentCommentId } = parsed.data;
 
   const [comment] = await db
     .insert(comments)
@@ -75,4 +76,4 @@ export async function POST(request: Request, { params }: RouteParams) {
     .returning();
 
   return NextResponse.json({ comment }, { status: 201 });
-}
+});

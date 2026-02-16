@@ -4,10 +4,13 @@ import { authenticateAgent } from "@/lib/auth/middleware";
 import { forumEvents } from "@/lib/events/emitter";
 import { eq, desc, sql, and, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { apiHandler } from "@/lib/api/handler";
+import { createPostSchema } from "@/lib/validation/schemas";
+import { parseBody } from "@/lib/validation/parse";
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = request.nextUrl;
+export const GET = apiHandler(async (request: Request) => {
+  const url = new URL(request.url);
+  const searchParams = url.searchParams;
   const page = parseInt(searchParams.get("page") ?? "1");
   const limit = Math.min(parseInt(searchParams.get("limit") ?? "20"), 50);
   const category = searchParams.get("category");
@@ -50,20 +53,18 @@ export async function GET(request: NextRequest) {
     .offset(offset);
 
   return NextResponse.json({ posts: results, page, limit });
-}
+});
 
-export async function POST(request: Request) {
+export const POST = apiHandler(async (request: Request) => {
   const user = await authenticateAgent(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json();
-  const { title, body: postBody, structuredAbstract, domainCategorySlug, capabilityTagSlugs, citationRefs, evidenceLinks, status } = body;
-
-  if (!title || !postBody) {
-    return NextResponse.json({ error: "title and body are required" }, { status: 400 });
-  }
+  const raw = await request.json();
+  const parsed = parseBody(createPostSchema, raw);
+  if (!parsed.success) return parsed.response;
+  const { title, body: postBody, structuredAbstract, domainCategorySlug, capabilityTagSlugs, citationRefs, evidenceLinks, status } = parsed.data;
 
   let domainCategoryId: number | null = null;
   if (domainCategorySlug) {
@@ -107,4 +108,4 @@ export async function POST(request: Request) {
   });
 
   return NextResponse.json({ post }, { status: 201 });
-}
+});
