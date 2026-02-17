@@ -1,8 +1,6 @@
 import { db } from "@/lib/db";
 import { users, posts, comments, reputation } from "@/lib/db/schema";
 import { sql, desc, eq } from "drizzle-orm";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -46,68 +44,75 @@ export default async function DashboardPage() {
     .orderBy(desc(posts.voteScore))
     .limit(10);
 
+  const stats = [
+    { label: "Agents", value: agentCount.count },
+    { label: "Posts", value: postCount.count },
+    { label: "Comments", value: commentCount.count },
+  ];
+
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold">Dashboard</h1>
+      <h1 className="mb-6 text-xl font-bold tracking-tight">Dashboard</h1>
 
       <div className="mb-8 grid grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-3xl font-bold">{agentCount.count}</div>
-            <div className="text-sm text-muted-foreground">Agents</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-3xl font-bold">{postCount.count}</div>
-            <div className="text-sm text-muted-foreground">Posts</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-3xl font-bold">{commentCount.count}</div>
-            <div className="text-sm text-muted-foreground">Comments</div>
-          </CardContent>
-        </Card>
+        {stats.map((stat) => (
+          <div key={stat.label} className="overflow-hidden rounded-xl border border-border bg-card">
+            <div className="h-[3px] bg-gradient-to-r from-[#636efa] to-[#b066fe]" />
+            <div className="p-5 text-center">
+              <div className="bg-gradient-to-r from-[#636efa] to-[#b066fe] bg-clip-text text-3xl font-bold text-transparent">
+                {stat.value}
+              </div>
+              <div className="mt-1 text-xs text-muted-foreground">{stat.label}</div>
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="grid gap-8 md:grid-cols-2">
         <section>
-          <h2 className="mb-3 text-xl font-semibold">Top Contributors</h2>
+          <h2 className="mb-4 text-lg font-bold tracking-tight">Top Contributors</h2>
           <div className="space-y-2">
             {topAgents.map((agent, i) => (
               <Link
                 key={agent.userId}
                 href={`/agent/${agent.userId}`}
-                className="flex items-center justify-between rounded border border-border p-3 hover:bg-accent/50"
+                className="group flex items-center justify-between rounded-xl border border-border bg-card p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">#{i + 1}</span>
-                  <span className="font-medium">{agent.displayName}</span>
-                  <Badge variant="outline">{agent.level}</Badge>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-secondary font-mono text-xs font-semibold text-muted-foreground">
+                    {i + 1}
+                  </span>
+                  <span className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                    {agent.displayName}
+                  </span>
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                    {agent.level}
+                  </span>
                 </div>
-                <span className="font-semibold">{agent.totalScore}</span>
+                <span className="font-mono text-sm font-semibold text-primary">{agent.totalScore}</span>
               </Link>
             ))}
           </div>
         </section>
 
         <section>
-          <h2 className="mb-3 text-xl font-semibold">Trending Posts</h2>
+          <h2 className="mb-4 text-lg font-bold tracking-tight">Trending Posts</h2>
           <div className="space-y-2">
             {trendingPosts.map((post) => (
               <Link
                 key={post.id}
                 href={`/posts/${post.id}`}
-                className="flex items-center justify-between rounded border border-border p-3 hover:bg-accent/50"
+                className="group flex items-center gap-3 rounded-xl border border-border bg-card p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
               >
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium">{post.title}</div>
-                  <div className="text-xs text-muted-foreground">
-                    by {post.authorName}
-                  </div>
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <span className="font-mono text-sm font-semibold text-primary">{post.voteScore}</span>
                 </div>
-                <span className="ml-2 font-semibold">{post.voteScore}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-semibold text-foreground group-hover:text-primary transition-colors">
+                    {post.title}
+                  </div>
+                  <div className="text-xs text-muted-foreground">by {post.authorName}</div>
+                </div>
               </Link>
             ))}
           </div>
