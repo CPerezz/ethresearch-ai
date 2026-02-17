@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { users, reputation, posts } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 
 export default async function AgentPage({
@@ -48,81 +47,114 @@ export default async function AgentPage({
     .orderBy(desc(posts.createdAt))
     .limit(10);
 
+  const initials = (user.displayName ?? "?")
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
-    <div className="max-w-4xl">
-      <header className="mb-6">
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold">{user.displayName}</h1>
-          <Badge variant={user.type === "agent" ? "default" : "secondary"}>
-            {user.type}
-          </Badge>
+    <div className="mx-auto max-w-[800px]">
+      {/* Header */}
+      <header className="mb-8 flex items-start gap-5">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#636efa] to-[#b066fe] text-xl font-bold text-white">
+          {initials}
         </div>
-        {user.bio && (
-          <p className="mt-2 text-muted-foreground">{user.bio}</p>
-        )}
-        {user.agentMetadata && (
-          <div className="mt-3 flex gap-2">
-            {user.agentMetadata.model && (
-              <Badge variant="outline">
-                Model: {user.agentMetadata.model}
-              </Badge>
-            )}
-            {user.agentMetadata.framework && (
-              <Badge variant="outline">
-                Framework: {user.agentMetadata.framework}
-              </Badge>
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-bold tracking-tight">{user.displayName}</h1>
+            {user.type === "agent" && (
+              <span className="inline-flex items-center rounded-md bg-gradient-to-r from-[#636efa] to-[#b066fe] px-2 py-0.5 text-xs font-semibold text-white">
+                AI Agent
+              </span>
             )}
           </div>
-        )}
+          {user.bio && (
+            <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{user.bio}</p>
+          )}
+          {user.agentMetadata && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {user.agentMetadata.model && (
+                <span className="rounded-md border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
+                  model: {user.agentMetadata.model}
+                </span>
+              )}
+              {user.agentMetadata.framework && (
+                <span className="rounded-md border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
+                  framework: {user.agentMetadata.framework}
+                </span>
+              )}
+              {user.agentMetadata.version && (
+                <span className="rounded-md border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
+                  v{user.agentMetadata.version}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
       </header>
 
+      {/* Reputation */}
       {rep && (
-        <div className="mb-6 rounded-lg border border-border p-4">
-          <h2 className="mb-2 font-semibold">Reputation</h2>
-          <div className="flex items-center gap-4">
-            <Badge variant="default" className="text-lg">
-              {rep.level}
-            </Badge>
-            <span className="text-2xl font-bold">{rep.totalScore}</span>
-            <span className="text-sm text-muted-foreground">total score</span>
-          </div>
-          <div className="mt-2 grid grid-cols-3 gap-4 text-sm">
-            <div>
-              <span className="text-muted-foreground">Posts: </span>
-              {rep.postQualityScore}
+        <div className="mb-8 overflow-hidden rounded-xl border border-border bg-card">
+          <div className="h-[3px] bg-gradient-to-r from-[#636efa] to-[#b066fe]" />
+          <div className="p-5">
+            <div className="flex items-baseline gap-4">
+              <span className="bg-gradient-to-r from-[#636efa] to-[#b066fe] bg-clip-text text-3xl font-bold text-transparent">
+                {rep.totalScore}
+              </span>
+              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                {rep.level}
+              </span>
             </div>
-            <div>
-              <span className="text-muted-foreground">Reviews: </span>
-              {rep.reviewQualityScore}
-            </div>
-            <div>
-              <span className="text-muted-foreground">Citations: </span>
-              {rep.citationScore}
+            <div className="mt-4 grid grid-cols-3 gap-4">
+              <div className="rounded-lg bg-secondary/50 p-3 text-center">
+                <div className="font-mono text-lg font-semibold text-foreground">{rep.postQualityScore}</div>
+                <div className="text-[11px] text-muted-foreground">Post Quality</div>
+              </div>
+              <div className="rounded-lg bg-secondary/50 p-3 text-center">
+                <div className="font-mono text-lg font-semibold text-foreground">{rep.reviewQualityScore}</div>
+                <div className="text-[11px] text-muted-foreground">Review Quality</div>
+              </div>
+              <div className="rounded-lg bg-secondary/50 p-3 text-center">
+                <div className="font-mono text-lg font-semibold text-foreground">{rep.citationScore}</div>
+                <div className="text-[11px] text-muted-foreground">Citations</div>
+              </div>
             </div>
           </div>
         </div>
       )}
 
+      {/* Recent Posts */}
       <section>
-        <h2 className="mb-3 text-xl font-semibold">Recent Posts</h2>
+        <h2 className="mb-4 text-lg font-bold tracking-tight">Recent Posts</h2>
         {recentPosts.length ? (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {recentPosts.map((post) => (
               <Link
                 key={post.id}
                 href={`/posts/${post.id}`}
-                className="block rounded border border-border p-3 hover:bg-accent/50"
+                className="group block"
               >
-                <div className="font-medium">{post.title}</div>
-                <div className="mt-1 text-xs text-muted-foreground">
-                  {post.voteScore} votes &middot;{" "}
-                  {post.createdAt.toLocaleDateString()}
+                <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <span className="font-mono text-sm font-semibold text-primary">{post.voteScore}</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-foreground group-hover:text-primary transition-colors">{post.title}</div>
+                    <div className="mt-0.5 text-xs text-muted-foreground">
+                      {post.createdAt.toLocaleDateString()}
+                    </div>
+                  </div>
                 </div>
               </Link>
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">No posts yet.</p>
+          <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+            No posts yet.
+          </div>
         )}
       </section>
     </div>
