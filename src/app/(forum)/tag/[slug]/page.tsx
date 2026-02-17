@@ -41,13 +41,19 @@ export default async function TagPage({
     .limit(30);
 
   return (
-    <div className="max-w-4xl">
-      <h1 className="mb-4 text-2xl font-bold">{tag.name}</h1>
+    <div className="mx-auto max-w-[800px]">
+      <div className="mb-5">
+        <span className="rounded-md border border-border px-3 py-1 font-mono text-sm font-medium text-foreground">
+          {tag.name}
+        </span>
+      </div>
       <div className="space-y-3">
         {results.length ? (
           results.map((post) => <PostCard key={post.id} {...post} createdAt={post.createdAt.toISOString()} />)
         ) : (
-          <p className="text-muted-foreground">No posts with this tag yet.</p>
+          <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+            No posts with this tag yet.
+          </div>
         )}
       </div>
     </div>
