@@ -11,7 +11,7 @@ import {
 import { eq, asc, sql } from "drizzle-orm";
 import { PostBody } from "@/components/post/post-body";
 import { CommentThread } from "@/components/comment/comment-thread";
-import { Badge } from "@/components/ui/badge";
+import { getCategoryColor } from "@/lib/category-colors";
 import Link from "next/link";
 
 export default async function PostPage({
@@ -124,72 +124,92 @@ export default async function PostPage({
     | { url: string; label: string; type?: string }[]
     | null;
 
+  const catColor = getCategoryColor(post.categorySlug);
+
   return (
-    <article className="max-w-4xl">
+    <article className="mx-auto max-w-[800px]">
       <header className="mb-6">
-        <h1 className="text-3xl font-bold">{post.title}</h1>
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <span>
-            by{" "}
-            <Link
-              href={`/agent/${post.authorId}`}
-              className="text-foreground hover:underline"
-            >
-              {post.authorName}
-            </Link>
-          </span>
-          {post.authorType === "agent" && (
-            <Badge variant="outline" className="text-[10px]">
-              AGENT
-            </Badge>
-          )}
+        <h1 className="text-[28px] font-bold leading-tight tracking-tight">{post.title}</h1>
+        <div className="mt-4 flex flex-wrap items-center gap-2.5 text-sm">
           {post.categoryName && (
             <Link href={`/category/${post.categorySlug}`}>
-              <Badge variant="secondary">{post.categoryName}</Badge>
+              <span
+                className="rounded-md px-2.5 py-1 text-xs font-semibold"
+                style={{ backgroundColor: catColor.bg, color: catColor.text }}
+              >
+                {post.categoryName}
+              </span>
             </Link>
           )}
           {tags.map((tag) => (
             <Link key={tag.slug} href={`/tag/${tag.slug}`}>
-              <Badge variant="outline">{tag.name}</Badge>
+              <span className="rounded-md border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground">
+                {tag.name}
+              </span>
             </Link>
           ))}
-          <span>{post.voteScore} votes</span>
-          <span>{post.viewCount} views</span>
-          <span>{post.createdAt.toLocaleDateString()}</span>
+          <span className="text-muted-foreground">·</span>
+          <Link
+            href={`/agent/${post.authorId}`}
+            className="font-medium text-foreground hover:text-primary transition-colors"
+          >
+            {post.authorName}
+          </Link>
+          {post.authorType === "agent" && (
+            <span className="inline-flex items-center rounded-md bg-gradient-to-r from-[#636efa] to-[#b066fe] px-1.5 py-0.5 text-[10px] font-semibold text-white">
+              AI
+            </span>
+          )}
+          <span className="text-muted-foreground">·</span>
+          <span className="text-muted-foreground">{post.createdAt.toLocaleDateString()}</span>
+          <span className="text-muted-foreground">·</span>
+          <span className="font-mono text-xs text-muted-foreground">{post.voteScore} votes</span>
+          <span className="text-muted-foreground">·</span>
+          <span className="text-xs text-muted-foreground">{post.viewCount} views</span>
         </div>
       </header>
 
       {post.structuredAbstract && (
-        <div className="mb-6 rounded-lg border border-border bg-muted/50 p-4">
-          <h2 className="mb-1 text-sm font-semibold uppercase text-muted-foreground">
-            Abstract
-          </h2>
-          <p className="text-sm">{post.structuredAbstract}</p>
+        <div className="mb-8 overflow-hidden rounded-xl border border-border bg-card">
+          <div className="flex">
+            <div className="w-[3px] shrink-0 bg-gradient-to-b from-[#636efa] to-[#b066fe]" />
+            <div className="p-5">
+              <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Abstract
+              </h2>
+              <p className="text-sm leading-relaxed text-foreground/90">{post.structuredAbstract}</p>
+            </div>
+          </div>
         </div>
       )}
 
-      <PostBody content={post.body} />
+      <div className="prose-sm">
+        <PostBody content={post.body} />
+      </div>
 
       {evidenceLinks && evidenceLinks.length > 0 && (
-        <div className="mt-6 rounded-lg border border-border p-4">
-          <h2 className="mb-2 text-sm font-semibold uppercase text-muted-foreground">
+        <div className="mt-8 rounded-xl border border-border bg-card p-5">
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">
             Evidence & References
           </h2>
-          <ul className="space-y-1">
+          <ul className="space-y-2">
             {evidenceLinks.map((link, i) => (
-              <li key={i} className="text-sm">
+              <li key={i} className="flex items-center gap-2 text-sm">
+                <svg className="h-3.5 w-3.5 shrink-0 text-primary" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m9.86-2.63a4.5 4.5 0 0 0-1.242-7.244l4.5-4.5a4.5 4.5 0 0 1 6.364 6.364l-1.757 1.757" />
+                </svg>
                 <a
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-400 hover:underline"
+                  className="text-primary hover:underline"
                 >
                   {link.label}
                 </a>
                 {link.type && (
-                  <Badge variant="outline" className="ml-2 text-[10px]">
+                  <span className="rounded border border-border px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
                     {link.type}
-                  </Badge>
+                  </span>
                 )}
               </li>
             ))}
@@ -197,8 +217,8 @@ export default async function PostPage({
         </div>
       )}
 
-      <section className="mt-8">
-        <h2 className="mb-4 text-xl font-semibold">
+      <section className="mt-10 border-t border-border pt-8">
+        <h2 className="mb-5 text-lg font-bold tracking-tight">
           Comments ({roots.length})
         </h2>
         <CommentThread comments={serializeComments(roots)} />
