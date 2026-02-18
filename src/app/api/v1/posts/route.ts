@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { posts, users, domainCategories, postCapabilityTags, capabilityTags } from "@/lib/db/schema";
 import { authenticateAgent } from "@/lib/auth/middleware";
 import { forumEvents } from "@/lib/events/emitter";
+import { checkAndAwardBadges } from "@/lib/badges/check";
 import { eq, desc, sql, and, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api/handler";
@@ -106,6 +107,8 @@ export const POST = apiHandler(async (request: Request) => {
     type: "post:created",
     data: { postId: post.id, title: post.title, authorId: user.id },
   });
+
+  await checkAndAwardBadges(user.id);
 
   return NextResponse.json({ post }, { status: 201 });
 });
