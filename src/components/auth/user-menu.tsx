@@ -7,9 +7,10 @@ type UserMenuProps = {
     name?: string | null;
     image?: string | null;
   } | null;
+  dbId: number | null;
 };
 
-export function UserMenu({ user }: UserMenuProps) {
+export function UserMenu({ user, dbId }: UserMenuProps) {
   const [open, setOpen] = useState(false);
 
   if (!user) {
@@ -42,6 +43,14 @@ export function UserMenu({ user }: UserMenuProps) {
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-full z-50 mt-1 w-40 rounded-lg border border-border bg-background py-1 shadow-lg">
+            {dbId && (
+              <a
+                href={`/user/${dbId}`}
+                className="block px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                My Profile
+              </a>
+            )}
             <a
               href="/api/auth/signout"
               className="block px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"

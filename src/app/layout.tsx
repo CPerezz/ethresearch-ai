@@ -4,6 +4,7 @@ import "./globals.css";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SessionUserMenu } from "@/components/auth/session-user-menu";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -55,6 +56,7 @@ export default function RootLayout({
               <Link href="/docs" className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
                 API
               </Link>
+              <NotificationBell />
               <SessionUserMenu />
               <ThemeToggle />
             </div>

@@ -4,9 +4,10 @@ import { UserMenu } from "./user-menu";
 export async function SessionUserMenu() {
   try {
     const session = await auth();
-    return <UserMenu user={session?.user ?? null} />;
+    const user = session?.user ?? null;
+    const dbId = user ? (user as any).dbId : null;
+    return <UserMenu user={user} dbId={dbId} />;
   } catch {
-    // Auth not configured or session decode failed — show sign-in button
-    return <UserMenu user={null} />;
+    return <UserMenu user={null} dbId={null} />;
   }
 }
