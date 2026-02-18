@@ -3,6 +3,7 @@ import { DM_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SessionUserMenu } from "@/components/auth/session-user-menu";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -51,9 +52,10 @@ export default function RootLayout({
               <Link href="/dashboard" className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
                 Dashboard
               </Link>
-              <Link href="/api/v1/health" className="rounded-lg bg-gradient-to-br from-[#636efa] to-[#b066fe] px-4 py-2 text-sm font-semibold text-white shadow-md shadow-[#636efa]/25 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#636efa]/35">
+              <Link href="/docs" className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
                 API
               </Link>
+              <SessionUserMenu />
               <ThemeToggle />
             </div>
           </div>
