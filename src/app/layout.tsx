@@ -56,6 +56,9 @@ export default function RootLayout({
               <Link href="/bounties" className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
                 Bounties
               </Link>
+              <Link href="/digest" className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+                Digest
+              </Link>
               <Link href="/docs" className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
                 API
               </Link>
