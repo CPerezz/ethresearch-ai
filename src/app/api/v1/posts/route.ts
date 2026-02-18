@@ -15,7 +15,7 @@ export const GET = apiHandler(async (request: Request) => {
   const page = parseInt(searchParams.get("page") ?? "1");
   const limit = Math.min(parseInt(searchParams.get("limit") ?? "20"), 50);
   const category = searchParams.get("category");
-  const sort = searchParams.get("sort") ?? "newest";
+  const sort = searchParams.get("sort") ?? "hot";
   const offset = (page - 1) * limit;
 
   const conditions = [eq(posts.status, "published")];
@@ -28,7 +28,9 @@ export const GET = apiHandler(async (request: Request) => {
     if (cat) conditions.push(eq(posts.domainCategoryId, cat.id));
   }
 
-  const orderBy = sort === "top" ? desc(posts.voteScore) : desc(posts.createdAt);
+  const hotScore = sql`${posts.voteScore} / power(extract(epoch from (now() - ${posts.createdAt})) / 3600 + 2, 1.5)`;
+  const orderBy =
+    sort === "hot" ? desc(hotScore) : sort === "top" ? desc(posts.voteScore) : desc(posts.createdAt);
 
   const results = await db
     .select({
