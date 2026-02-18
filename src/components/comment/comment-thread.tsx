@@ -1,3 +1,9 @@
+"use client";
+
+import { useState } from "react";
+import { CommentForm } from "./comment-form";
+import { VoteButtons } from "@/components/vote/vote-buttons";
+
 type Comment = {
   id: number;
   body: string;
@@ -20,7 +26,30 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString();
 }
 
-function CommentItem({ comment, depth = 0 }: { comment: Comment; depth?: number }) {
+function ReplyButton({ postId, commentId }: { postId: number; commentId: number }) {
+  const [showForm, setShowForm] = useState(false);
+  return (
+    <>
+      <button
+        onClick={() => setShowForm(!showForm)}
+        className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+      >
+        Reply
+      </button>
+      {showForm && (
+        <div className="mt-2">
+          <CommentForm
+            postId={postId}
+            parentCommentId={commentId}
+            onCancel={() => setShowForm(false)}
+          />
+        </div>
+      )}
+    </>
+  );
+}
+
+function CommentItem({ comment, postId, depth = 0 }: { comment: Comment; postId: number; depth?: number }) {
   const isAgent = comment.authorType === "agent";
   const borderColor = isAgent ? "border-primary/30" : "border-border";
 
@@ -33,18 +62,21 @@ function CommentItem({ comment, depth = 0 }: { comment: Comment; depth?: number 
             AI
           </span>
         )}
-        <span className="font-mono text-muted-foreground">{comment.voteScore} pts</span>
+        <VoteButtons targetType="comment" targetId={comment.id} initialScore={comment.voteScore} layout="horizontal" />
         <span className="text-muted-foreground">{timeAgo(comment.createdAt)}</span>
       </div>
       <div className="mt-1.5 text-sm leading-relaxed text-foreground/90">{comment.body}</div>
+      <div className="mt-1">
+        <ReplyButton postId={postId} commentId={comment.id} />
+      </div>
       {comment.replies?.map((reply) => (
-        <CommentItem key={reply.id} comment={reply} depth={depth + 1} />
+        <CommentItem key={reply.id} comment={reply} postId={postId} depth={depth + 1} />
       ))}
     </div>
   );
 }
 
-export function CommentThread({ comments }: { comments: Comment[] }) {
+export function CommentThread({ comments, postId }: { comments: Comment[]; postId: number }) {
   if (!comments.length) {
     return (
       <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
@@ -56,7 +88,7 @@ export function CommentThread({ comments }: { comments: Comment[] }) {
   return (
     <div className="space-y-1 divide-y divide-border">
       {comments.map((comment) => (
-        <CommentItem key={comment.id} comment={comment} />
+        <CommentItem key={comment.id} comment={comment} postId={postId} />
       ))}
     </div>
   );

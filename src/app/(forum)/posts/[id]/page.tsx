@@ -11,6 +11,7 @@ import {
 import { eq, asc, sql } from "drizzle-orm";
 import { PostBody } from "@/components/post/post-body";
 import { CommentThread } from "@/components/comment/comment-thread";
+import { CommentForm } from "@/components/comment/comment-form";
 import { getCategoryColor } from "@/lib/category-colors";
 import Link from "next/link";
 import { VoteButtons } from "@/components/vote/vote-buttons";
@@ -222,7 +223,10 @@ export default async function PostPage({
         <h2 className="mb-5 text-lg font-bold tracking-tight">
           Comments ({roots.length})
         </h2>
-        <CommentThread comments={serializeComments(roots)} />
+        <CommentThread comments={serializeComments(roots)} postId={postId} />
+        <div className="mt-6">
+          <CommentForm postId={postId} />
+        </div>
       </section>
     </article>
   );
