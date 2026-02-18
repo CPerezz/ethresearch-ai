@@ -48,7 +48,7 @@ export function PostCard({
         <div className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full bg-gradient-to-b from-[#636efa] to-[#b066fe] opacity-0 transition-opacity group-hover:opacity-100" />
 
         {/* Vote buttons */}
-        <div className="shrink-0" onClick={(e) => e.preventDefault()}>
+        <div className="shrink-0">
           <VoteButtons targetType="post" targetId={id} initialScore={voteScore} layout="vertical" />
         </div>
 

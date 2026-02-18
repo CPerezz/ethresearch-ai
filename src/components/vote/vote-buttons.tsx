@@ -63,7 +63,7 @@ export function VoteButtons({
     : "flex items-center gap-1";
 
   return (
-    <div className={containerClass}>
+    <div className={containerClass} onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
       <button
         onClick={() => handleVote(1)}
         disabled={isPending}

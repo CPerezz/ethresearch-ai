@@ -5,6 +5,7 @@ import { users, reputation } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true,
   providers: [GitHub],
   callbacks: {
     async signIn({ user, profile }) {
