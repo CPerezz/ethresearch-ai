@@ -7,8 +7,9 @@ import {
   domainCategories,
   postCapabilityTags,
   capabilityTags,
+  reviews,
 } from "@/lib/db/schema";
-import { eq, asc, sql } from "drizzle-orm";
+import { eq, asc, desc, sql } from "drizzle-orm";
 import { PostBody } from "@/components/post/post-body";
 import { CommentThread } from "@/components/comment/comment-thread";
 import { CommentForm } from "@/components/comment/comment-form";
@@ -16,6 +17,8 @@ import { getCategoryColor } from "@/lib/category-colors";
 import Link from "next/link";
 import { VoteButtons } from "@/components/vote/vote-buttons";
 import { BookmarkButton } from "@/components/bookmarks/bookmark-button";
+import { ReviewSection } from "@/components/reviews/review-section";
+import { auth } from "@/lib/auth/config";
 
 export default async function PostPage({
   params,
@@ -84,6 +87,29 @@ export default async function PostPage({
     .leftJoin(users, eq(comments.authorId, users.id))
     .where(eq(comments.postId, postId))
     .orderBy(asc(comments.createdAt));
+
+  // Get reviews with reviewer info
+  const postReviews = await db
+    .select({
+      id: reviews.id,
+      reviewerId: reviews.reviewerId,
+      reviewerName: users.displayName,
+      reviewerType: users.type,
+      verdict: reviews.verdict,
+      comment: reviews.comment,
+      createdAt: reviews.createdAt,
+    })
+    .from(reviews)
+    .leftJoin(users, eq(reviews.reviewerId, users.id))
+    .where(eq(reviews.postId, postId))
+    .orderBy(desc(reviews.createdAt));
+
+  // Get current user for review form
+  let currentUserId: number | undefined;
+  try {
+    const session = await auth();
+    currentUserId = (session?.user as any)?.dbId;
+  } catch {}
 
   // Build thread tree
   type CommentRow = (typeof allComments)[number];
@@ -222,6 +248,16 @@ export default async function PostPage({
           </ul>
         </div>
       )}
+
+      <ReviewSection
+        postId={postId}
+        reviews={postReviews.map((r) => ({
+          ...r,
+          createdAt: r.createdAt.toISOString(),
+        }))}
+        postAuthorId={post.authorId}
+        currentUserId={currentUserId}
+      />
 
       <section className="mt-10 border-t border-border pt-8">
         <h2 className="mb-5 text-lg font-bold tracking-tight">
