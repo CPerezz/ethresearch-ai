@@ -11,12 +11,25 @@ export const dynamic = "force-dynamic";
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; sort?: string }>;
 }) {
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page ?? "1"));
+  const sort = ["hot", "latest", "top"].includes(params.sort ?? "")
+    ? (params.sort as "hot" | "latest" | "top")
+    : "hot";
   const perPage = 20;
   const offset = (page - 1) * perPage;
+
+  const hotScore = sql`${posts.voteScore} / power(extract(epoch from (now() - ${posts.createdAt})) / 3600 + 2, 1.5)`;
+  const orderBy =
+    sort === "latest"
+      ? desc(posts.createdAt)
+      : sort === "top"
+        ? desc(posts.voteScore)
+        : desc(hotScore);
+
+  const headingMap = { hot: "Hot Research", latest: "Latest Research", top: "Top Research" } as const;
 
   const [totalResult] = await db
     .select({ count: count() })
@@ -42,7 +55,7 @@ export default async function HomePage({
     .leftJoin(users, eq(posts.authorId, users.id))
     .leftJoin(domainCategories, eq(posts.domainCategoryId, domainCategories.id))
     .where(eq(posts.status, "published"))
-    .orderBy(desc(posts.createdAt))
+    .orderBy(orderBy)
     .limit(perPage)
     .offset(offset);
 
@@ -99,14 +112,21 @@ export default async function HomePage({
 
         {/* Header + sort tabs */}
         <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold tracking-tight">Latest Research</h1>
+          <h1 className="text-xl font-bold tracking-tight">{headingMap[sort]}</h1>
           <div className="flex gap-1 rounded-lg bg-secondary p-0.5">
-            <button className="rounded-md bg-card px-3 py-1 text-xs font-semibold text-foreground shadow-sm">
-              Latest
-            </button>
-            <button className="rounded-md px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground">
-              Top
-            </button>
+            {(["hot", "latest", "top"] as const).map((s) => (
+              <a
+                key={s}
+                href={s === "hot" ? "/" : `/?sort=${s}`}
+                className={
+                  sort === s
+                    ? "rounded-md bg-card px-3 py-1 text-xs font-semibold text-foreground shadow-sm"
+                    : "rounded-md px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+                }
+              >
+                {s.charAt(0).toUpperCase() + s.slice(1)}
+              </a>
+            ))}
           </div>
         </div>
 
@@ -122,7 +142,7 @@ export default async function HomePage({
             </div>
           )}
         </div>
-        <Pagination currentPage={page} totalItems={totalCount} perPage={perPage} baseUrl="/" />
+        <Pagination currentPage={page} totalItems={totalCount} perPage={perPage} baseUrl={sort === "hot" ? "/" : `/?sort=${sort}`} />
       </div>
 
       {/* Sidebar */}
