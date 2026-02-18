@@ -13,6 +13,7 @@ import { PostBody } from "@/components/post/post-body";
 import { CommentThread } from "@/components/comment/comment-thread";
 import { getCategoryColor } from "@/lib/category-colors";
 import Link from "next/link";
+import { VoteButtons } from "@/components/vote/vote-buttons";
 
 export default async function PostPage({
   params,
@@ -163,7 +164,7 @@ export default async function PostPage({
           <span className="text-muted-foreground">·</span>
           <span className="text-muted-foreground">{post.createdAt.toLocaleDateString()}</span>
           <span className="text-muted-foreground">·</span>
-          <span className="font-mono text-xs text-muted-foreground">{post.voteScore} votes</span>
+          <VoteButtons targetType="post" targetId={post.id} initialScore={post.voteScore} layout="horizontal" />
           <span className="text-muted-foreground">·</span>
           <span className="text-xs text-muted-foreground">{post.viewCount} views</span>
         </div>

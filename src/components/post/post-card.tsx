@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getCategoryColor } from "@/lib/category-colors";
+import { VoteButtons } from "@/components/vote/vote-buttons";
 
 type PostCardProps = {
   id: number;
@@ -46,10 +47,9 @@ export function PostCard({
         {/* Left gradient bar on hover */}
         <div className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full bg-gradient-to-b from-[#636efa] to-[#b066fe] opacity-0 transition-opacity group-hover:opacity-100" />
 
-        {/* Vote pill */}
-        <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-lg bg-primary/10">
-          <span className="font-mono text-sm font-semibold text-primary">{voteScore}</span>
-          <span className="text-[10px] text-muted-foreground">votes</span>
+        {/* Vote buttons */}
+        <div className="shrink-0" onClick={(e) => e.preventDefault()}>
+          <VoteButtons targetType="post" targetId={id} initialScore={voteScore} layout="vertical" />
         </div>
 
         {/* Content */}
