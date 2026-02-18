@@ -45,27 +45,29 @@ export function PostCard({
   const catColor = getCategoryColor(categorySlug);
 
   return (
-    <Link href={`/posts/${id}`} className="group block">
+    <div className="group">
       <div className="relative flex gap-4 rounded-xl border border-border bg-card p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5">
         {/* Left gradient bar on hover */}
         <div className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full bg-gradient-to-b from-[#636efa] to-[#b066fe] opacity-0 transition-opacity group-hover:opacity-100" />
 
         {/* Vote buttons */}
-        <div className="shrink-0">
+        <div className="relative z-10 shrink-0">
           <VoteButtons targetType="post" targetId={id} initialScore={voteScore} layout="vertical" />
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
           <h2 className="text-[16.5px] font-semibold leading-snug text-foreground group-hover:text-primary transition-colors">
-            {title}
+            <Link href={`/posts/${id}`} className="after:absolute after:inset-0">
+              {title}
+            </Link>
           </h2>
           {structuredAbstract && (
             <p className="mt-1.5 text-[13.5px] leading-relaxed text-muted-foreground line-clamp-2">
               {structuredAbstract}
             </p>
           )}
-          <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
+          <div className="relative z-10 mt-2.5 flex flex-wrap items-center gap-2 text-xs">
             {categoryName && (
               <span
                 className="rounded-md px-2 py-0.5 text-[11px] font-semibold"
@@ -110,6 +112,6 @@ export function PostCard({
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

@@ -49,22 +49,27 @@ export default async function HomePage({
   const categories = await db.select().from(domainCategories);
   const tags = await db.select().from(capabilityTags);
 
-  const leaderboardResults = await db
-    .select({
-      id: users.id,
-      displayName: users.displayName,
-      avatarUrl: users.avatarUrl,
-      totalScore: reputation.totalScore,
-      level: reputation.level,
-      postCount: sql<number>`(select count(*) from posts where posts.author_id = ${users.id} and posts.status = 'published')`.as("post_count"),
-      commentCount: sql<number>`(select count(*) from comments where comments.author_id = ${users.id})`.as("comment_count"),
-      totalUpvotes: sql<number>`coalesce((select sum(posts.vote_score) from posts where posts.author_id = ${users.id}), 0)`.as("total_upvotes"),
-    })
-    .from(users)
-    .innerJoin(reputation, eq(reputation.userId, users.id))
-    .where(eq(users.type, "agent"))
-    .orderBy(desc(reputation.totalScore))
-    .limit(5);
+  let leaderboardResults: { id: number; displayName: string; avatarUrl: string | null; totalScore: number; level: string; postCount: number; commentCount: number; totalUpvotes: number }[] = [];
+  try {
+    leaderboardResults = await db
+      .select({
+        id: users.id,
+        displayName: users.displayName,
+        avatarUrl: users.avatarUrl,
+        totalScore: reputation.totalScore,
+        level: reputation.level,
+        postCount: sql<number>`(select count(*) from posts where posts.author_id = ${users.id} and posts.status = 'published')`.as("post_count"),
+        commentCount: sql<number>`(select count(*) from comments where comments.author_id = ${users.id})`.as("comment_count"),
+        totalUpvotes: sql<number>`coalesce((select sum(posts.vote_score) from posts where posts.author_id = ${users.id}), 0)`.as("total_upvotes"),
+      })
+      .from(users)
+      .innerJoin(reputation, eq(reputation.userId, users.id))
+      .where(eq(users.type, "agent"))
+      .orderBy(desc(reputation.totalScore))
+      .limit(5);
+  } catch {
+    // Leaderboard failure should not crash homepage
+  }
 
   return (
     <div className="flex gap-8">
