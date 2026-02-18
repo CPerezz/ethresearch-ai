@@ -102,7 +102,7 @@ export const bookmarksRelations = relations(bookmarks, ({ one }) => ({
 
 **Step 2: Push schema to database**
 
-Run: `DATABASE_URL="postgresql://neondb_owner:npg_BtjAcoKIf79Y@ep-spring-salad-ag3rtgd5-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require" npx drizzle-kit push`
+Run: `source .env.local && npx drizzle-kit push`
 
 Expected: `[✓] Changes applied`
 

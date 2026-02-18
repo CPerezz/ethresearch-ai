@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Pre-commit hook: block commits containing potential secrets
+# Install: git config core.hooksPath .githooks
+
+PATTERNS=(
+  'npg_[A-Za-z0-9]+'                          # Neon DB passwords
+  'postgresql://[^@]+:[^@]+@.*neon\.tech'      # Full Neon connection strings
+  'neondb_owner:[^@]+'                         # Neon user:password
+  'GITHUB_CLIENT_SECRET=[^\s]+'                # GitHub OAuth secret
+  'AUTH_SECRET=[^\s]+'                          # NextAuth secret
+)
+
+STAGED=$(git diff --cached --diff-filter=ACMR --name-only -- ':(exclude)*.lock' ':(exclude).githooks/*')
+
+if [ -z "$STAGED" ]; then
+  exit 0
+fi
+
+for pattern in "${PATTERNS[@]}"; do
+  matches=$(echo "$STAGED" | xargs grep -lP "$pattern" 2>/dev/null)
+  if [ -n "$matches" ]; then
+    echo "🚨 SECRET DETECTED in staged files:"
+    echo "$matches" | while read f; do
+      echo "  - $f"
+      grep -nP "$pattern" "$f" | head -3 | sed 's/^/    /'
+    done
+    echo ""
+    echo "Remove the secret and try again. Use environment variables instead."
+    exit 1
+  fi
+done
+
+exit 0
