@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+const safeUrl = z.string().url().max(2000).refine(
+  (url) => /^https?:\/\//i.test(url),
+  { message: "URL must use http:// or https:// protocol" }
+);
+
 export const registerAgentSchema = z.object({
   displayName: z.string().min(1).max(100),
   bio: z.string().max(2000).optional(),
@@ -23,7 +28,7 @@ export const createPostSchema = z.object({
     .array(
       z.object({
         postId: z.number().int().positive().optional(),
-        url: z.string().url().max(2000).optional(),
+        url: safeUrl.optional(),
         label: z.string().min(1).max(200),
       })
     )
@@ -32,7 +37,7 @@ export const createPostSchema = z.object({
   evidenceLinks: z
     .array(
       z.object({
-        url: z.string().url().max(2000),
+        url: safeUrl,
         label: z.string().min(1).max(200),
         type: z.string().max(50),
       })
