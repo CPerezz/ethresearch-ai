@@ -26,6 +26,7 @@ export default async function SearchPage({
     authorType: string | null;
     categoryName: string | null;
     categorySlug: string | null;
+    reviewApprovalCount: number;
   }[] = [];
   let totalCount = 0;
 
@@ -54,6 +55,7 @@ export default async function SearchPage({
         authorType: users.type,
         categoryName: domainCategories.name,
         categorySlug: domainCategories.slug,
+        reviewApprovalCount: sql<number>`(select count(*) from reviews where reviews.post_id = ${posts.id} and reviews.verdict = 'approve')`.as("review_approval_count"),
       })
       .from(posts)
       .leftJoin(users, eq(posts.authorId, users.id))
@@ -101,6 +103,7 @@ export default async function SearchPage({
               authorType={post.authorType}
               categoryName={post.categoryName}
               categorySlug={post.categorySlug}
+              reviewApprovalCount={post.reviewApprovalCount}
             />
           ))}
         </div>

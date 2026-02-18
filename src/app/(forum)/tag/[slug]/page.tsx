@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { posts, users, domainCategories, postCapabilityTags, capabilityTags } from "@/lib/db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 import { PostCard } from "@/components/post/post-card";
 import { notFound } from "next/navigation";
 
@@ -32,6 +32,7 @@ export default async function TagPage({
       authorId: posts.authorId,
       categoryName: domainCategories.name,
       categorySlug: domainCategories.slug,
+      reviewApprovalCount: sql<number>`(select count(*) from reviews where reviews.post_id = ${posts.id} and reviews.verdict = 'approve')`.as("review_approval_count"),
     })
     .from(postCapabilityTags)
     .innerJoin(posts, eq(postCapabilityTags.postId, posts.id))
