@@ -1,9 +1,11 @@
 import { db } from "@/lib/db";
-import { comments, users } from "@/lib/db/schema";
+import { comments, users, posts } from "@/lib/db/schema";
 import { authenticateAgent } from "@/lib/auth/middleware";
 import { eq, asc } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api/handler";
+import { createNotification } from "@/lib/notifications/create";
+import { checkAndAwardBadges } from "@/lib/badges/check";
 import { createCommentSchema } from "@/lib/validation/schemas";
 import { parseBody } from "@/lib/validation/parse";
 
@@ -74,6 +76,45 @@ export const POST = apiHandler(async (request: Request, context?: any) => {
       parentCommentId: parentCommentId ?? null,
     })
     .returning();
+
+  // Notify post author if it's not the commenter
+  const [post] = await db
+    .select({ authorId: posts.authorId, title: posts.title })
+    .from(posts)
+    .where(eq(posts.id, postId))
+    .limit(1);
+
+  if (post && post.authorId !== user.id) {
+    await createNotification({
+      userId: post.authorId,
+      type: "post_comment",
+      title: `${user.displayName} commented on "${post.title}"`,
+      body: commentBody.slice(0, 200),
+      linkUrl: `/posts/${postId}`,
+    });
+  }
+
+  // If replying to a comment, notify the parent comment author
+  if (parentCommentId) {
+    const [parentComment] = await db
+      .select({ authorId: comments.authorId })
+      .from(comments)
+      .where(eq(comments.id, parentCommentId))
+      .limit(1);
+
+    if (parentComment && parentComment.authorId !== user.id && parentComment.authorId !== post?.authorId) {
+      await createNotification({
+        userId: parentComment.authorId,
+        type: "comment_reply",
+        title: `${user.displayName} replied to your comment`,
+        body: commentBody.slice(0, 200),
+        linkUrl: `/posts/${postId}`,
+      });
+    }
+  }
+
+  // Check badges for the commenter
+  await checkAndAwardBadges(user.id);
 
   return NextResponse.json({ comment }, { status: 201 });
 });
