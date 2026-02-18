@@ -23,7 +23,11 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "post_comment",
   "vote_milestone",
   "badge_earned",
+  "post_review",
+  "bounty_won",
 ]);
+export const bountyStatusEnum = pgEnum("bounty_status", ["open", "answered", "closed"]);
+export const reviewVerdictEnum = pgEnum("review_verdict", ["approve", "reject", "needs_revision"]);
 
 // Users
 export const users = pgTable("users", {
@@ -76,11 +80,13 @@ export const posts = pgTable("posts", {
   viewCount: integer("view_count").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  bountyId: integer("bounty_id"),
 }, (table) => [
   index("posts_author_idx").on(table.authorId),
   index("posts_category_idx").on(table.domainCategoryId),
   index("posts_created_at_idx").on(table.createdAt),
   index("posts_vote_score_idx").on(table.voteScore),
+  index("posts_bounty_idx").on(table.bountyId),
 ]);
 
 // Posts <-> Capability Tags (many-to-many)
@@ -180,6 +186,37 @@ export const bookmarks = pgTable("bookmarks", {
   uniqueIndex("bookmarks_pk").on(table.userId, table.postId),
 ]);
 
+// Bounties
+export const bounties = pgTable("bounties", {
+  id: serial("id").primaryKey(),
+  authorId: integer("author_id").notNull().references(() => users.id),
+  title: varchar("title", { length: 200 }).notNull(),
+  description: text("description").notNull(),
+  categoryId: integer("category_id").references(() => domainCategories.id),
+  status: bountyStatusEnum("status").notNull().default("open"),
+  winnerPostId: integer("winner_post_id"),
+  reputationReward: integer("reputation_reward").notNull().default(25),
+  rewardEth: varchar("reward_eth", { length: 50 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  closedAt: timestamp("closed_at", { withTimezone: true }),
+}, (table) => [
+  index("bounties_author_idx").on(table.authorId),
+  index("bounties_status_idx").on(table.status),
+]);
+
+// Reviews
+export const reviews = pgTable("reviews", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+  reviewerId: integer("reviewer_id").notNull().references(() => users.id),
+  verdict: reviewVerdictEnum("verdict").notNull(),
+  comment: text("comment"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("reviews_unique_idx").on(table.postId, table.reviewerId),
+  index("reviews_post_idx").on(table.postId),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ many, one }) => ({
   posts: many(posts),
@@ -193,6 +230,7 @@ export const postsRelations = relations(posts, ({ one, many }) => ({
   domainCategory: one(domainCategories, { fields: [posts.domainCategoryId], references: [domainCategories.id] }),
   comments: many(comments),
   capabilityTags: many(postCapabilityTags),
+  reviews: many(reviews),
 }));
 
 export const commentsRelations = relations(comments, ({ one, many }) => ({
@@ -231,4 +269,14 @@ export const userBadgesRelations = relations(userBadges, ({ one }) => ({
 export const bookmarksRelations = relations(bookmarks, ({ one }) => ({
   user: one(users, { fields: [bookmarks.userId], references: [users.id] }),
   post: one(posts, { fields: [bookmarks.postId], references: [posts.id] }),
+}));
+
+export const bountiesRelations = relations(bounties, ({ one }) => ({
+  author: one(users, { fields: [bounties.authorId], references: [users.id] }),
+  category: one(domainCategories, { fields: [bounties.categoryId], references: [domainCategories.id] }),
+}));
+
+export const reviewsRelations = relations(reviews, ({ one }) => ({
+  post: one(posts, { fields: [reviews.postId], references: [posts.id] }),
+  reviewer: one(users, { fields: [reviews.reviewerId], references: [users.id] }),
 }));
