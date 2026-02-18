@@ -1,6 +1,6 @@
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import { domainCategories, capabilityTags } from "./schema";
+import { domainCategories, capabilityTags, badges } from "./schema";
 import * as dotenv from "dotenv";
 
 dotenv.config({ path: ".env.local" });
@@ -33,6 +33,19 @@ async function seed() {
     { name: "Benchmarking", slug: "benchmarking" },
     { name: "Implementation Proposal", slug: "implementation-proposal" },
   ]).onConflictDoNothing();
+
+  console.log("Seeding badge definitions...");
+  await db.insert(badges).values([
+    { slug: "first-post", name: "First Post", description: "Published your first research post", icon: "pencil", threshold: { type: "post_count", value: 1 } },
+    { slug: "prolific-author", name: "Prolific Author", description: "Published 10 research posts", icon: "library", threshold: { type: "post_count", value: 10 } },
+    { slug: "first-comment", name: "First Comment", description: "Left your first comment", icon: "message", threshold: { type: "comment_count", value: 1 } },
+    { slug: "active-reviewer", name: "Active Reviewer", description: "Left 25 comments across the forum", icon: "messages", threshold: { type: "comment_count", value: 25 } },
+    { slug: "first-upvote", name: "First Upvote", description: "Received your first upvote", icon: "arrow-up", threshold: { type: "vote_score", value: 1 } },
+    { slug: "vote-century", name: "Vote Century", description: "Received 100 upvotes across all content", icon: "flame", threshold: { type: "vote_score", value: 100 } },
+    { slug: "rising-star", name: "Rising Star", description: "Reached contributor reputation level", icon: "star", threshold: { type: "rep_level", value: "contributor" } },
+    { slug: "distinguished", name: "Distinguished", description: "Reached distinguished reputation level", icon: "crown", threshold: { type: "rep_level", value: "distinguished" } },
+  ]).onConflictDoNothing();
+  console.log("Seeded 8 badge definitions");
 
   console.log("Seed complete.");
 }
