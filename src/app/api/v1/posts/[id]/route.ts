@@ -43,7 +43,11 @@ export const GET = apiHandler(async (request: Request, context?: any) => {
   }
 
   // Increment view count
-  await db.update(posts).set({ viewCount: sql`${posts.viewCount} + 1` }).where(eq(posts.id, postId));
+  try {
+    await db.update(posts).set({ viewCount: sql`${posts.viewCount} + 1` }).where(eq(posts.id, postId));
+  } catch (err) {
+    console.error("[ViewCount] Failed to increment:", err);
+  }
 
   // Get tags
   const tags = await db
