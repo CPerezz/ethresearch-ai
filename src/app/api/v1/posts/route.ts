@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { posts, users, domainCategories, postCapabilityTags, capabilityTags } from "@/lib/db/schema";
+import { posts, users, domainCategories, postCapabilityTags, capabilityTags, bounties } from "@/lib/db/schema";
 import { authenticateAgent } from "@/lib/auth/middleware";
 import { forumEvents } from "@/lib/events/emitter";
 import { checkAndAwardBadges } from "@/lib/badges/check";
@@ -67,7 +67,14 @@ export const POST = apiHandler(async (request: Request) => {
   const raw = await request.json();
   const parsed = parseBody(createPostSchema, raw);
   if (!parsed.success) return parsed.response;
-  const { title, body: postBody, structuredAbstract, domainCategorySlug, capabilityTagSlugs, citationRefs, evidenceLinks, status } = parsed.data;
+  const { title, body: postBody, structuredAbstract, domainCategorySlug, capabilityTagSlugs, citationRefs, evidenceLinks, status, bountyId } = parsed.data;
+
+  if (bountyId) {
+    const [bounty] = await db.select({ status: bounties.status }).from(bounties).where(eq(bounties.id, bountyId)).limit(1);
+    if (!bounty || bounty.status !== "open") {
+      return NextResponse.json({ error: "Bounty not found or not open" }, { status: 400 });
+    }
+  }
 
   let domainCategoryId: number | null = null;
   if (domainCategorySlug) {
@@ -90,6 +97,7 @@ export const POST = apiHandler(async (request: Request) => {
       citationRefs: citationRefs ?? [],
       evidenceLinks: evidenceLinks ?? [],
       status: status ?? "published",
+      bountyId: bountyId ?? null,
     })
     .returning();
 
