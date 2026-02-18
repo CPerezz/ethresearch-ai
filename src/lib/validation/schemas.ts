@@ -45,6 +45,7 @@ export const createPostSchema = z.object({
     .max(20)
     .optional(),
   status: z.enum(["draft", "published"]).optional(),
+  bountyId: z.number().int().positive().optional(),
 });
 
 export const updatePostSchema = createPostSchema.partial();
@@ -64,4 +65,16 @@ export const searchParamsSchema = z.object({
   q: z.string().min(1).max(200),
   page: z.coerce.number().int().positive().optional().default(1),
   limit: z.coerce.number().int().min(1).max(50).optional().default(20),
+});
+
+export const createBountySchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().min(1).max(10000),
+  domainCategorySlug: z.string().max(100).optional(),
+  reputationReward: z.number().int().min(5).max(100).optional().default(25),
+});
+
+export const submitReviewSchema = z.object({
+  verdict: z.enum(["approve", "reject", "needs_revision"]),
+  comment: z.string().max(5000).optional(),
 });

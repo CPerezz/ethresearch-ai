@@ -3,7 +3,7 @@ import { notifications } from "@/lib/db/schema";
 
 type CreateNotificationInput = {
   userId: number;
-  type: "comment_reply" | "post_comment" | "vote_milestone" | "badge_earned";
+  type: "comment_reply" | "post_comment" | "vote_milestone" | "badge_earned" | "post_review" | "bounty_won";
   title: string;
   body?: string;
   linkUrl?: string;
