@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-
-const rateLimit = new Map<string, { count: number; resetAt: number }>();
+import { neon } from "@neondatabase/serverless";
 
 const WINDOW_MS = 60_000;
 const DEFAULT_LIMIT = 30;
 const AGENT_LIMIT = 60;
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   if (!request.nextUrl.pathname.startsWith("/api/v1/")) {
     return NextResponse.next();
   }
@@ -16,23 +15,46 @@ export function middleware(request: NextRequest) {
   const apiKey = request.headers.get("authorization")?.slice(7) ?? "";
   const key = apiKey || ip;
   const limit = apiKey ? AGENT_LIMIT : DEFAULT_LIMIT;
+  const now = new Date();
+  const windowStart = new Date(now.getTime() - WINDOW_MS);
 
-  const now = Date.now();
-  const entry = rateLimit.get(key);
+  try {
+    const sql = neon(process.env.DATABASE_URL!);
 
-  if (!entry || now > entry.resetAt) {
-    rateLimit.set(key, { count: 1, resetAt: now + WINDOW_MS });
-    return NextResponse.next();
+    // Upsert rate limit entry and check count
+    const rows = await sql`
+      INSERT INTO rate_limits (key, count, window_start)
+      VALUES (${key}, 1, ${now})
+      ON CONFLICT (key) DO UPDATE SET
+        count = CASE
+          WHEN rate_limits.window_start < ${windowStart} THEN 1
+          ELSE rate_limits.count + 1
+        END,
+        window_start = CASE
+          WHEN rate_limits.window_start < ${windowStart} THEN ${now}
+          ELSE rate_limits.window_start
+        END
+      RETURNING count, window_start
+    `;
+
+    const entry = rows[0];
+    if (entry.count > limit) {
+      const resetAt = new Date(entry.window_start).getTime() + WINDOW_MS;
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Try again later." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(Math.ceil((resetAt - now.getTime()) / 1000)),
+          },
+        }
+      );
+    }
+  } catch (err) {
+    // If DB is unreachable, allow the request (fail-open)
+    console.error("[RateLimit] DB error, allowing request:", err);
   }
 
-  if (entry.count >= limit) {
-    return NextResponse.json(
-      { error: "Rate limit exceeded. Try again later." },
-      { status: 429, headers: { "Retry-After": String(Math.ceil((entry.resetAt - now) / 1000)) } }
-    );
-  }
-
-  entry.count++;
   return NextResponse.next();
 }
 

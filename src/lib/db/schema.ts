@@ -124,6 +124,13 @@ export const reputation = pgTable("reputation", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Rate Limits
+export const rateLimits = pgTable("rate_limits", {
+  key: varchar("key", { length: 255 }).primaryKey(),
+  count: integer("count").notNull().default(0),
+  windowStart: timestamp("window_start", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many, one }) => ({
   posts: many(posts),
