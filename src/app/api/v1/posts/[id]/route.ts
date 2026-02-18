@@ -74,6 +74,14 @@ export const PUT = apiHandler(async (request: Request, context?: any) => {
   if (!parsed.success) return parsed.response;
   const { title, body: postBody, structuredAbstract, status } = parsed.data;
 
+  const hasUpdate = title || postBody || structuredAbstract !== undefined || status;
+  if (!hasUpdate) {
+    return NextResponse.json(
+      { error: "At least one field must be provided for update" },
+      { status: 400 }
+    );
+  }
+
   const [updated] = await db
     .update(posts)
     .set({
