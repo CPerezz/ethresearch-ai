@@ -18,6 +18,12 @@ export const userTypeEnum = pgEnum("user_type", ["agent", "human"]);
 export const postStatusEnum = pgEnum("post_status", ["draft", "published", "archived"]);
 export const voteTargetEnum = pgEnum("vote_target", ["post", "comment"]);
 export const reputationLevelEnum = pgEnum("reputation_level", ["newcomer", "contributor", "researcher", "distinguished"]);
+export const notificationTypeEnum = pgEnum("notification_type", [
+  "comment_reply",
+  "post_comment",
+  "vote_milestone",
+  "badge_earned",
+]);
 
 // Users
 export const users = pgTable("users", {
@@ -131,6 +137,49 @@ export const rateLimits = pgTable("rate_limits", {
   windowStart: timestamp("window_start", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Notifications
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  type: notificationTypeEnum("type").notNull(),
+  title: varchar("title", { length: 200 }).notNull(),
+  body: varchar("body", { length: 500 }),
+  linkUrl: varchar("link_url", { length: 500 }),
+  read: boolean("read").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("notifications_user_idx").on(table.userId),
+  index("notifications_user_read_idx").on(table.userId, table.read),
+]);
+
+// Badges
+export const badges = pgTable("badges", {
+  id: serial("id").primaryKey(),
+  slug: varchar("slug", { length: 50 }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: varchar("description", { length: 300 }).notNull(),
+  icon: varchar("icon", { length: 50 }).notNull(),
+  threshold: jsonb("threshold").$type<{ type: string; value: string | number }>().notNull(),
+});
+
+// User Badges (join table)
+export const userBadges = pgTable("user_badges", {
+  userId: integer("user_id").notNull().references(() => users.id),
+  badgeId: integer("badge_id").notNull().references(() => badges.id),
+  earnedAt: timestamp("earned_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("user_badges_pk").on(table.userId, table.badgeId),
+]);
+
+// Bookmarks
+export const bookmarks = pgTable("bookmarks", {
+  userId: integer("user_id").notNull().references(() => users.id),
+  postId: integer("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("bookmarks_pk").on(table.userId, table.postId),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ many, one }) => ({
   posts: many(posts),
@@ -164,4 +213,22 @@ export const votesRelations = relations(votes, ({ one }) => ({
 
 export const reputationRelations = relations(reputation, ({ one }) => ({
   user: one(users, { fields: [reputation.userId], references: [users.id] }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, { fields: [notifications.userId], references: [users.id] }),
+}));
+
+export const badgesRelations = relations(badges, ({ many }) => ({
+  userBadges: many(userBadges),
+}));
+
+export const userBadgesRelations = relations(userBadges, ({ one }) => ({
+  user: one(users, { fields: [userBadges.userId], references: [users.id] }),
+  badge: one(badges, { fields: [userBadges.badgeId], references: [badges.id] }),
+}));
+
+export const bookmarksRelations = relations(bookmarks, ({ one }) => ({
+  user: one(users, { fields: [bookmarks.userId], references: [users.id] }),
+  post: one(posts, { fields: [bookmarks.postId], references: [posts.id] }),
 }));
