@@ -1,14 +1,18 @@
 import { db } from "@/lib/db";
 import { posts, users, domainCategories } from "@/lib/db/schema";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql, and, count } from "drizzle-orm";
 import { PostCard } from "@/components/post/post-card";
+import { Pagination } from "@/components/pagination";
 
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; page?: string }>;
 }) {
-  const { q } = await searchParams;
+  const { q, page: pageParam } = await searchParams;
+  const page = Math.max(1, parseInt(pageParam ?? "1"));
+  const perPage = 20;
+  const offset = (page - 1) * perPage;
 
   let results: {
     id: number;
@@ -23,8 +27,20 @@ export default async function SearchPage({
     categoryName: string | null;
     categorySlug: string | null;
   }[] = [];
+  let totalCount = 0;
 
   if (q) {
+    const searchCondition = and(
+      eq(posts.status, "published"),
+      sql`to_tsvector('english', ${posts.title} || ' ' || ${posts.body}) @@ plainto_tsquery('english', ${q})`
+    );
+
+    const [totalResult] = await db
+      .select({ count: count() })
+      .from(posts)
+      .where(searchCondition);
+    totalCount = totalResult.count;
+
     results = await db
       .select({
         id: posts.id,
@@ -45,16 +61,12 @@ export default async function SearchPage({
         domainCategories,
         eq(posts.domainCategoryId, domainCategories.id)
       )
-      .where(
-        and(
-          eq(posts.status, "published"),
-          sql`to_tsvector('english', ${posts.title} || ' ' || ${posts.body}) @@ plainto_tsquery('english', ${q})`
-        )
-      )
+      .where(searchCondition)
       .orderBy(
         sql`ts_rank(to_tsvector('english', ${posts.title} || ' ' || ${posts.body}), plainto_tsquery('english', ${q})) DESC`
       )
-      .limit(30);
+      .limit(perPage)
+      .offset(offset);
   }
 
   return (
@@ -96,6 +108,7 @@ export default async function SearchPage({
           No results for &ldquo;{q}&rdquo;
         </div>
       ) : null}
+      {q && <Pagination currentPage={page} totalItems={totalCount} perPage={perPage} baseUrl="/search" searchParams={{ q: q ?? "" }} />}
     </div>
   );
 }

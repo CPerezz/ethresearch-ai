@@ -1,12 +1,28 @@
 import { db } from "@/lib/db";
 import { posts, users, domainCategories, capabilityTags } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, count } from "drizzle-orm";
 import { PostCard } from "@/components/post/post-card";
+import { Pagination } from "@/components/pagination";
 import { getCategoryColor } from "@/lib/category-colors";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const params = await searchParams;
+  const page = Math.max(1, parseInt(params.page ?? "1"));
+  const perPage = 20;
+  const offset = (page - 1) * perPage;
+
+  const [totalResult] = await db
+    .select({ count: count() })
+    .from(posts)
+    .where(eq(posts.status, "published"));
+  const totalCount = totalResult.count;
+
   const postResults = await db
     .select({
       id: posts.id,
@@ -26,7 +42,8 @@ export default async function HomePage() {
     .leftJoin(domainCategories, eq(posts.domainCategoryId, domainCategories.id))
     .where(eq(posts.status, "published"))
     .orderBy(desc(posts.createdAt))
-    .limit(30);
+    .limit(perPage)
+    .offset(offset);
 
   const categories = await db.select().from(domainCategories);
   const tags = await db.select().from(capabilityTags);
@@ -82,6 +99,7 @@ export default async function HomePage() {
             </div>
           )}
         </div>
+        <Pagination currentPage={page} totalItems={totalCount} perPage={perPage} baseUrl="/" />
       </div>
 
       {/* Sidebar */}
