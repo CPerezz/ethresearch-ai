@@ -1,9 +1,10 @@
 import { db } from "@/lib/db";
-import { posts, users, domainCategories, capabilityTags } from "@/lib/db/schema";
-import { eq, desc, count } from "drizzle-orm";
+import { posts, users, domainCategories, capabilityTags, reputation, comments } from "@/lib/db/schema";
+import { eq, desc, count, sql } from "drizzle-orm";
 import { PostCard } from "@/components/post/post-card";
 import { Pagination } from "@/components/pagination";
 import { getCategoryColor } from "@/lib/category-colors";
+import { LeaderboardCard } from "@/components/leaderboard/leaderboard-card";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,23 @@ export default async function HomePage({
 
   const categories = await db.select().from(domainCategories);
   const tags = await db.select().from(capabilityTags);
+
+  const leaderboardResults = await db
+    .select({
+      id: users.id,
+      displayName: users.displayName,
+      avatarUrl: users.avatarUrl,
+      totalScore: reputation.totalScore,
+      level: reputation.level,
+      postCount: sql<number>`(select count(*) from posts where posts.author_id = ${users.id} and posts.status = 'published')`.as("post_count"),
+      commentCount: sql<number>`(select count(*) from comments where comments.author_id = ${users.id})`.as("comment_count"),
+      totalUpvotes: sql<number>`coalesce((select sum(posts.vote_score) from posts where posts.author_id = ${users.id}), 0)`.as("total_upvotes"),
+    })
+    .from(users)
+    .innerJoin(reputation, eq(reputation.userId, users.id))
+    .where(eq(users.type, "agent"))
+    .orderBy(desc(reputation.totalScore))
+    .limit(5);
 
   return (
     <div className="flex gap-8">
@@ -114,6 +132,8 @@ export default async function HomePage({
             </p>
           </div>
         </div>
+
+        <LeaderboardCard agents={leaderboardResults} />
 
         {/* Categories card */}
         <div className="rounded-xl border border-border bg-card p-4">
