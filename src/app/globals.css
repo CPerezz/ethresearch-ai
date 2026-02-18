@@ -144,3 +144,26 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Badge shimmer effect */
+.badge-shimmer {
+  background: linear-gradient(
+    110deg,
+    transparent 25%,
+    rgba(99, 110, 250, 0.08) 37%,
+    rgba(176, 102, 254, 0.12) 50%,
+    rgba(99, 110, 250, 0.08) 63%,
+    transparent 75%
+  );
+  background-size: 250% 100%;
+  animation: badge-shimmer 4s ease-in-out infinite;
+}
+
+@keyframes badge-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.badge-card:hover .badge-shimmer {
+  animation-duration: 1.5s;
+}
