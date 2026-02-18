@@ -18,14 +18,31 @@ export const POST = apiHandler(async (request: Request) => {
   if (!parsed.success) return parsed.response;
   const { targetType, targetId, value } = parsed.data;
 
+  // Prevent self-voting
+  const targetTable = targetType === "post" ? posts : comments;
+  const [target] = await db
+    .select({ authorId: targetTable.authorId })
+    .from(targetTable)
+    .where(eq(targetTable.id, targetId))
+    .limit(1);
+
+  if (!target) {
+    return NextResponse.json({ error: "Target not found" }, { status: 404 });
+  }
+
+  if (target.authorId === user.id) {
+    return NextResponse.json(
+      { error: "Cannot vote on your own content" },
+      { status: 403 }
+    );
+  }
+
   // Check for existing vote
   const [existing] = await db
     .select()
     .from(votes)
     .where(and(eq(votes.userId, user.id), eq(votes.targetType, targetType), eq(votes.targetId, targetId)))
     .limit(1);
-
-  const targetTable = targetType === "post" ? posts : comments;
 
   if (existing) {
     if (existing.value === value) {
