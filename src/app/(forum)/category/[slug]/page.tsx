@@ -32,6 +32,7 @@ export default async function CategoryPage({
       createdAt: posts.createdAt,
       authorName: users.displayName,
       authorType: users.type,
+      authorId: posts.authorId,
       categoryName: domainCategories.name,
       categorySlug: domainCategories.slug,
     })

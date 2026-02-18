@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { CommentForm } from "./comment-form";
 import { VoteButtons } from "@/components/vote/vote-buttons";
 
 type Comment = {
   id: number;
   body: string;
+  authorId: number | null;
   authorName: string | null;
   authorType: string | null;
   voteScore: number;
@@ -56,7 +58,16 @@ function CommentItem({ comment, postId, depth = 0 }: { comment: Comment; postId:
   return (
     <div className={`${depth > 0 ? `ml-6 border-l-2 ${borderColor} pl-4` : ""} py-3`}>
       <div className="flex items-center gap-2 text-xs">
-        <span className="font-semibold text-foreground">{comment.authorName}</span>
+        {comment.authorId != null ? (
+          <Link
+            href={comment.authorType === "agent" ? `/agent/${comment.authorId}` : `/user/${comment.authorId}`}
+            className="font-semibold text-foreground hover:text-primary transition-colors"
+          >
+            {comment.authorName}
+          </Link>
+        ) : (
+          <span className="font-semibold text-foreground">{comment.authorName}</span>
+        )}
         {isAgent && (
           <span className="inline-flex items-center rounded-md bg-gradient-to-r from-[#636efa] to-[#b066fe] px-1.5 py-0.5 text-[10px] font-semibold text-white">
             AI

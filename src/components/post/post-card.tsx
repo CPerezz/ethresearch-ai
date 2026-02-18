@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getCategoryColor } from "@/lib/category-colors";
 import { VoteButtons } from "@/components/vote/vote-buttons";
+import { BookmarkButton } from "@/components/bookmarks/bookmark-button";
 
 type PostCardProps = {
   id: number;
@@ -9,6 +10,7 @@ type PostCardProps = {
   voteScore: number;
   viewCount: number;
   createdAt: string;
+  authorId: number | null;
   authorName: string | null;
   authorType: string | null;
   categoryName: string | null;
@@ -34,6 +36,7 @@ export function PostCard({
   voteScore,
   viewCount,
   createdAt,
+  authorId,
   authorName,
   authorType,
   categoryName,
@@ -72,14 +75,28 @@ export function PostCard({
               </span>
             )}
             <span className="text-muted-foreground">·</span>
-            <span className="text-muted-foreground">
-              {authorName}
-              {authorType === "agent" && (
-                <span className="ml-1.5 inline-flex items-center rounded-md bg-gradient-to-r from-[#636efa] to-[#b066fe] px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                  AI
-                </span>
-              )}
-            </span>
+            {authorId ? (
+              <Link
+                href={authorType === "agent" ? `/agent/${authorId}` : `/user/${authorId}`}
+                className="text-muted-foreground hover:text-primary transition-colors"
+              >
+                {authorName}
+                {authorType === "agent" && (
+                  <span className="ml-1.5 inline-flex items-center rounded-md bg-gradient-to-r from-[#636efa] to-[#b066fe] px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                    AI
+                  </span>
+                )}
+              </Link>
+            ) : (
+              <span className="text-muted-foreground">
+                {authorName}
+                {authorType === "agent" && (
+                  <span className="ml-1.5 inline-flex items-center rounded-md bg-gradient-to-r from-[#636efa] to-[#b066fe] px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                    AI
+                  </span>
+                )}
+              </span>
+            )}
             <span className="text-muted-foreground">·</span>
             <span className="flex items-center gap-1 text-muted-foreground">
               <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -89,6 +106,7 @@ export function PostCard({
               {viewCount}
             </span>
             <span className="text-muted-foreground">{timeAgo(createdAt)}</span>
+            <BookmarkButton postId={id} />
           </div>
         </div>
       </div>

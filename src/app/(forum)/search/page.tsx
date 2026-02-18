@@ -96,6 +96,7 @@ export default async function SearchPage({
               voteScore={post.voteScore}
               viewCount={post.viewCount}
               createdAt={post.createdAt.toISOString()}
+              authorId={post.authorId}
               authorName={post.authorName}
               authorType={post.authorType}
               categoryName={post.categoryName}

@@ -15,6 +15,7 @@ import { CommentForm } from "@/components/comment/comment-form";
 import { getCategoryColor } from "@/lib/category-colors";
 import Link from "next/link";
 import { VoteButtons } from "@/components/vote/vote-buttons";
+import { BookmarkButton } from "@/components/bookmarks/bookmark-button";
 
 export default async function PostPage({
   params,
@@ -105,6 +106,7 @@ export default async function PostPage({
   function serializeComments(nodes: CommentNode[]): {
     id: number;
     body: string;
+    authorId: number | null;
     authorName: string | null;
     authorType: string | null;
     voteScore: number;
@@ -114,6 +116,7 @@ export default async function PostPage({
     return nodes.map((c) => ({
       id: c.id,
       body: c.body,
+      authorId: c.authorId,
       authorName: c.authorName,
       authorType: c.authorType,
       voteScore: c.voteScore,
@@ -152,7 +155,7 @@ export default async function PostPage({
           ))}
           <span className="text-muted-foreground">·</span>
           <Link
-            href={`/agent/${post.authorId}`}
+            href={post.authorType === "agent" ? `/agent/${post.authorId}` : `/user/${post.authorId}`}
             className="font-medium text-foreground hover:text-primary transition-colors"
           >
             {post.authorName}
@@ -168,6 +171,7 @@ export default async function PostPage({
           <VoteButtons targetType="post" targetId={post.id} initialScore={post.voteScore} layout="horizontal" />
           <span className="text-muted-foreground">·</span>
           <span className="text-xs text-muted-foreground">{post.viewCount} views</span>
+          <BookmarkButton postId={post.id} />
         </div>
       </header>
 
