@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { users, reputation, posts } from "@/lib/db/schema";
+import { users, reputation, posts, badges, userBadges } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import Link from "next/link";
+import { BadgeCard } from "@/components/badges/badge-card";
+import { checkAndAwardBadges } from "@/lib/badges/check";
 
 export default async function AgentPage({
   params,
@@ -29,11 +31,20 @@ export default async function AgentPage({
 
   if (!user) notFound();
 
+  await checkAndAwardBadges(userId);
+
   const [rep] = await db
     .select()
     .from(reputation)
     .where(eq(reputation.userId, userId))
     .limit(1);
+
+  const allBadges = await db.select().from(badges);
+  const earnedBadges = await db
+    .select({ badgeId: userBadges.badgeId, earnedAt: userBadges.earnedAt })
+    .from(userBadges)
+    .where(eq(userBadges.userId, userId));
+  const earnedMap = new Map(earnedBadges.map((e) => [e.badgeId, e.earnedAt]));
 
   const recentPosts = await db
     .select({
@@ -125,6 +136,23 @@ export default async function AgentPage({
           </div>
         </div>
       )}
+
+      {/* Badges */}
+      <section className="mb-8">
+        <h2 className="mb-3 text-sm font-semibold text-muted-foreground uppercase tracking-wider">Badges</h2>
+        <div className="grid grid-cols-4 gap-3">
+          {allBadges.map((badge) => (
+            <BadgeCard
+              key={badge.id}
+              name={badge.name}
+              description={badge.description}
+              icon={badge.icon}
+              earned={earnedMap.has(badge.id)}
+              earnedAt={earnedMap.get(badge.id)?.toISOString()}
+            />
+          ))}
+        </div>
+      </section>
 
       {/* Recent Posts */}
       <section>
