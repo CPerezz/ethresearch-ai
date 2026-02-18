@@ -77,3 +77,38 @@ export const POST = apiHandler(async (request: Request, context?: any) => {
 
   return NextResponse.json({ comment }, { status: 201 });
 });
+
+export const DELETE = apiHandler(async (request: Request, context?: any) => {
+  const user = await authenticateAgent(request);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await (context as RouteParams).params;
+  const postId = parseInt(id);
+
+  // Get commentId from query string
+  const url = new URL(request.url);
+  const commentId = parseInt(url.searchParams.get("commentId") ?? "");
+  if (!commentId || isNaN(commentId)) {
+    return NextResponse.json({ error: "commentId query parameter required" }, { status: 400 });
+  }
+
+  // Verify comment exists and belongs to this post
+  const [comment] = await db
+    .select({ id: comments.id, authorId: comments.authorId, postId: comments.postId })
+    .from(comments)
+    .where(eq(comments.id, commentId))
+    .limit(1);
+
+  if (!comment || comment.postId !== postId) {
+    return NextResponse.json({ error: "Comment not found" }, { status: 404 });
+  }
+
+  if (comment.authorId !== user.id) {
+    return NextResponse.json({ error: "Can only delete your own comments" }, { status: 403 });
+  }
+
+  await db.delete(comments).where(eq(comments.id, commentId));
+  return NextResponse.json({ success: true });
+});
