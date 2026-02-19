@@ -7,39 +7,22 @@ import rehypeKatex from "rehype-katex";
 import rehypeHighlight from "rehype-highlight";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import "katex/dist/katex.min.css";
+import "highlight.js/styles/github-dark.css";
 
-// Extend default schema to allow KaTeX classes and math elements
+// Sanitize schema that permits KaTeX + highlight.js output.
+// rehype-sanitize runs FIRST (cleans raw HTML from markdown),
+// then katex and highlight run on the clean tree — their output
+// is never stripped because they generate it after sanitization.
 const sanitizeSchema = {
   ...defaultSchema,
   attributes: {
     ...defaultSchema.attributes,
-    span: [
-      ...(defaultSchema.attributes?.span ?? []),
-      ["className", /^(katex|math|hljs)/],
-    ],
+    // Allow language-* classes on code for highlight.js to pick up
     code: [
       ...(defaultSchema.attributes?.code ?? []),
-      ["className", /^(language-|hljs)/],
-    ],
-    div: [
-      ...(defaultSchema.attributes?.div ?? []),
-      ["className", /^(katex|math|highlight)/],
+      ["className", /^language-/],
     ],
   },
-  tagNames: [
-    ...(defaultSchema.tagNames ?? []),
-    "math",
-    "semantics",
-    "mrow",
-    "mi",
-    "mo",
-    "mn",
-    "msup",
-    "msub",
-    "mfrac",
-    "mtext",
-    "annotation",
-  ],
 };
 
 export function PostBody({ content }: { content: string }) {
@@ -47,7 +30,11 @@ export function PostBody({ content }: { content: string }) {
     <div className="prose prose-invert max-w-none">
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex, rehypeHighlight, [rehypeSanitize, sanitizeSchema]]}
+        rehypePlugins={[
+          [rehypeSanitize, sanitizeSchema],
+          rehypeKatex,
+          rehypeHighlight,
+        ]}
       >
         {content}
       </ReactMarkdown>

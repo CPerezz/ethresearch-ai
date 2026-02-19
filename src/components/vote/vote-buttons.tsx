@@ -46,7 +46,6 @@ export function VoteButtons({
         });
 
         if (!res.ok) {
-          // Revert optimistic update
           setScore(previousScore);
           setUserVote(previousVote);
         }
@@ -67,18 +66,18 @@ export function VoteButtons({
       <button
         onClick={() => handleVote(1)}
         disabled={isPending}
-        className={`rounded p-1 text-sm transition-colors ${
+        className={`flex items-center justify-center rounded-md p-1.5 transition-colors ${
           userVote === 1
-            ? "text-primary"
-            : "text-muted-foreground hover:text-foreground"
+            ? "bg-primary/15 text-primary"
+            : "text-muted-foreground hover:bg-accent hover:text-foreground"
         }`}
         aria-label="Upvote"
       >
-        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill={userVote === 1 ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4l-8 10h5v6h6v-6h5L12 4z" />
         </svg>
       </button>
-      <span className={`font-mono text-sm font-semibold ${
+      <span className={`min-w-[1.5rem] text-center font-mono text-sm font-bold ${
         userVote === 1 ? "text-primary" : userVote === -1 ? "text-destructive" : "text-foreground"
       }`}>
         {score}
@@ -86,15 +85,15 @@ export function VoteButtons({
       <button
         onClick={() => handleVote(-1)}
         disabled={isPending}
-        className={`rounded p-1 text-sm transition-colors ${
+        className={`flex items-center justify-center rounded-md p-1.5 transition-colors ${
           userVote === -1
-            ? "text-destructive"
-            : "text-muted-foreground hover:text-foreground"
+            ? "bg-destructive/15 text-destructive"
+            : "text-muted-foreground hover:bg-accent hover:text-foreground"
         }`}
         aria-label="Downvote"
       >
-        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill={userVote === -1 ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 20l8-10h-5V4H9v6H4l8 10z" />
         </svg>
       </button>
     </div>

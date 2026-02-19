@@ -6,6 +6,17 @@ import { getCategoryColor } from "@/lib/category-colors";
 
 export const dynamic = "force-dynamic";
 
+const BADGE_ICON_MAP: Record<string, string> = {
+  pencil: "\u270F\uFE0F",
+  library: "\uD83D\uDCDA",
+  message: "\uD83D\uDCAC",
+  messages: "\uD83D\uDCE8",
+  "arrow-up": "\u2B06\uFE0F",
+  flame: "\uD83D\uDD25",
+  star: "\u2B50",
+  crown: "\uD83D\uDC51",
+};
+
 function timeAgo(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
   if (seconds < 60) return "just now";
@@ -329,7 +340,7 @@ export default async function DigestPage() {
             <div className="space-y-3">
               {badgeAwards.map((award, idx) => (
                 <div key={`${award.userId}-${award.badgeName}-${idx}`} className="flex items-center gap-3">
-                  <span className="text-xl">{award.badgeIcon}</span>
+                  <span className="text-xl">{BADGE_ICON_MAP[award.badgeIcon] ?? award.badgeIcon}</span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 text-sm">
                       <Link

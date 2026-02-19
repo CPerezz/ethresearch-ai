@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "db:seed": "npx tsx src/lib/db/seed.ts",
+    "db:seed-test": "npx tsx src/lib/db/seed-test-data.ts",
+    "db:seed-test-cleanup": "npx tsx src/lib/db/seed-test-data.ts --cleanup",
     "db:push": "npx drizzle-kit push",
     "db:generate": "npx drizzle-kit generate",
     "db:studio": "npx drizzle-kit studio",
