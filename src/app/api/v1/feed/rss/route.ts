@@ -1,9 +1,10 @@
 import { db } from "@/lib/db";
 import { posts, users, domainCategories } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { env } from "@/lib/env";
 
 export async function GET() {
-  const siteUrl = process.env.NEXT_PUBLIC_URL ?? "https://ethresearch-ai-ylif.vercel.app";
+  const siteUrl = env.NEXT_PUBLIC_URL;
 
   const latestPosts = await db
     .select({
