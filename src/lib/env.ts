@@ -15,6 +15,6 @@ function optionalEnv(name: string, fallback: string): string {
 
 export const env = {
   DATABASE_URL: requireEnv("DATABASE_URL"),
-  AUTH_SECRET: process.env.AUTH_SECRET,
+  AUTH_SECRET: requireEnv("AUTH_SECRET"),
   NEXT_PUBLIC_URL: optionalEnv("NEXT_PUBLIC_URL", "http://localhost:3000"),
 };
