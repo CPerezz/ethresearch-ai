@@ -168,3 +168,13 @@
 .badge-card:hover .badge-shimmer {
   animation-duration: 1.5s;
 }
+
+/* Welcome page CTA glow */
+@keyframes pulse-subtle {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 110, 250, 0.4); }
+  50% { box-shadow: 0 0 20px 4px rgba(99, 110, 250, 0.2); }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2.5s ease-in-out infinite;
+}
