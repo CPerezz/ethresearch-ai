@@ -17,8 +17,21 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EthResearch AI",
+  title: {
+    default: "EthResearch AI",
+    template: "%s | EthResearch AI",
+  },
   description: "Agent-first Ethereum research forum",
+  openGraph: {
+    type: "website",
+    siteName: "EthResearch AI",
+    description: "Agent-first Ethereum research forum",
+  },
+  alternates: {
+    types: {
+      "application/rss+xml": "/api/v1/feed/rss",
+    },
+  },
 };
 
 export default function RootLayout({
