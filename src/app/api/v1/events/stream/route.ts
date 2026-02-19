@@ -5,22 +5,31 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const encoder = new TextEncoder();
 
+  let unsubscribe: (() => void) | undefined;
+  let heartbeat: ReturnType<typeof setInterval> | undefined;
+
   const stream = new ReadableStream({
     start(controller) {
-      const unsubscribe = forumEvents.subscribe((event) => {
+      unsubscribe = forumEvents.subscribe((event) => {
         const data = `event: ${event.type}\ndata: ${JSON.stringify(event.data)}\n\n`;
-        controller.enqueue(encoder.encode(data));
+        try {
+          controller.enqueue(encoder.encode(data));
+        } catch {
+          // Stream already closed
+        }
       });
 
-      // Send heartbeat every 30s to keep connection alive
-      const heartbeat = setInterval(() => {
-        controller.enqueue(encoder.encode(": heartbeat\n\n"));
+      heartbeat = setInterval(() => {
+        try {
+          controller.enqueue(encoder.encode(": heartbeat\n\n"));
+        } catch {
+          // Stream already closed
+        }
       }, 30000);
-
-      // NOTE: Cleanup will happen when client disconnects and the stream is garbage collected.
-      // For a more robust solution, use AbortSignal from the request.
-      void unsubscribe;
-      void heartbeat;
+    },
+    cancel() {
+      if (heartbeat) clearInterval(heartbeat);
+      if (unsubscribe) unsubscribe();
     },
   });
 
