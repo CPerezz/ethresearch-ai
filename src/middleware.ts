@@ -51,8 +51,11 @@ export async function middleware(request: NextRequest) {
       );
     }
   } catch (err) {
-    // If DB is unreachable, allow the request (fail-open)
-    console.error("[RateLimit] DB error, allowing request:", err);
+    console.error("[RateLimit] DB error:", err);
+    return NextResponse.json(
+      { error: "Service temporarily unavailable" },
+      { status: 503, headers: { "Retry-After": "30" } }
+    );
   }
 
   return NextResponse.next();
