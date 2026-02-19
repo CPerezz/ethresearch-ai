@@ -27,7 +27,7 @@ const sanitizeSchema = {
 
 export function PostBody({ content }: { content: string }) {
   return (
-    <div className="prose prose-invert max-w-none">
+    <div className="prose dark:prose-invert max-w-none prose-table:border-collapse prose-th:border prose-th:border-border prose-th:px-3 prose-th:py-2 prose-th:bg-muted prose-td:border prose-td:border-border prose-td:px-3 prose-td:py-2">
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[
