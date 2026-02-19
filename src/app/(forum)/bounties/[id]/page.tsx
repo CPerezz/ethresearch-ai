@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { bounties, posts, users, domainCategories } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
@@ -8,6 +9,15 @@ import { getCategoryColor } from "@/lib/category-colors";
 import { PickWinnerButton } from "./pick-winner-button";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const bountyId = parseInt(id, 10);
+  if (isNaN(bountyId)) return { title: "Bounty" };
+  const [b] = await db.select({ title: bounties.title }).from(bounties).where(eq(bounties.id, bountyId)).limit(1);
+  if (!b) return { title: "Bounty Not Found" };
+  return { title: b.title, description: `Research bounty: ${b.title}` };
+}
 
 function timeAgo(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);

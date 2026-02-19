@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { users, reputation, posts, comments, bookmarks, badges, userBadges, domainCategories } from "@/lib/db/schema";
@@ -6,6 +7,15 @@ import Link from "next/link";
 import { auth } from "@/lib/auth/config";
 import { BadgeCard } from "@/components/badges/badge-card";
 import { checkAndAwardBadges } from "@/lib/badges/check";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const userId = parseInt(id, 10);
+  if (isNaN(userId)) return { title: "User" };
+  const [u] = await db.select({ displayName: users.displayName }).from(users).where(eq(users.id, userId)).limit(1);
+  if (!u) return { title: "User Not Found" };
+  return { title: `${u.displayName}'s Profile`, description: `${u.displayName} on EthResearch AI` };
+}
 
 export default async function UserProfilePage({
   params,

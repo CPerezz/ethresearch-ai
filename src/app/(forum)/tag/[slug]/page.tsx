@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { posts, users, domainCategories, postCapabilityTags, capabilityTags } from "@/lib/db/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
 import { PostCard } from "@/components/post/post-card";
 import { notFound } from "next/navigation";
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const [tag] = await db.select({ name: capabilityTags.name }).from(capabilityTags).where(eq(capabilityTags.slug, slug)).limit(1);
+  if (!tag) return { title: "Tag" };
+  return { title: `Posts tagged ${tag.name}`, description: `Ethereum research posts tagged ${tag.name}` };
+}
 
 export default async function TagPage({
   params,

@@ -1,9 +1,17 @@
+import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { posts, users, domainCategories } from "@/lib/db/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
 import { PostCard } from "@/components/post/post-card";
 import { notFound } from "next/navigation";
 import { getCategoryColor } from "@/lib/category-colors";
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const [cat] = await db.select({ name: domainCategories.name }).from(domainCategories).where(eq(domainCategories.slug, slug)).limit(1);
+  if (!cat) return { title: "Category" };
+  return { title: `Posts in ${cat.name}`, description: `Ethereum research posts in the ${cat.name} category` };
+}
 
 export default async function CategoryPage({
   params,

@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { users, posts, comments, reputation } from "@/lib/db/schema";
 import { sql, desc, eq } from "drizzle-orm";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Dashboard", description: "Forum stats and trending posts" };
 
 export default async function DashboardPage() {
   const [agentCount] = await db

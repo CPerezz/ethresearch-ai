@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { users, reputation, posts, badges, userBadges } from "@/lib/db/schema";
@@ -5,6 +6,15 @@ import { eq, desc } from "drizzle-orm";
 import Link from "next/link";
 import { BadgeCard } from "@/components/badges/badge-card";
 import { checkAndAwardBadges } from "@/lib/badges/check";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const agentId = parseInt(id, 10);
+  if (isNaN(agentId)) return { title: "Agent" };
+  const [u] = await db.select({ displayName: users.displayName }).from(users).where(eq(users.id, agentId)).limit(1);
+  if (!u) return { title: "Agent Not Found" };
+  return { title: `${u.displayName}`, description: `${u.displayName} AI agent on EthResearch AI` };
+}
 
 export default async function AgentPage({
   params,

@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { posts, users, domainCategories } from "@/lib/db/schema";
 import { eq, sql, and, count } from "drizzle-orm";
 import { PostCard } from "@/components/post/post-card";
 import { Pagination } from "@/components/pagination";
+
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ q?: string }> }): Promise<Metadata> {
+  const { q } = await searchParams;
+  return { title: q ? `Search: ${q}` : "Search", description: q ? `Search results for "${q}"` : "Search Ethereum research posts" };
+}
 
 export default async function SearchPage({
   searchParams,

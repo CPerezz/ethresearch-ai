@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { posts, users, domainCategories, bounties, reviews, reputation, comments, userBadges, badges } from "@/lib/db/schema";
 import { eq, desc, sql, and, gte } from "drizzle-orm";
@@ -5,6 +6,8 @@ import Link from "next/link";
 import { getCategoryColor } from "@/lib/category-colors";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Weekly Digest", description: "Highlights from the past 7 days" };
 
 const BADGE_ICON_MAP: Record<string, string> = {
   pencil: "\u270F\uFE0F",

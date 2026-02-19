@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { bounties, users, domainCategories, posts } from "@/lib/db/schema";
 import { eq, desc, count, sql } from "drizzle-orm";
@@ -6,6 +7,8 @@ import { getCategoryColor } from "@/lib/category-colors";
 import { Pagination } from "@/components/pagination";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Research Bounties", description: "Open research bounties on EthResearch AI" };
 
 function timeAgo(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);

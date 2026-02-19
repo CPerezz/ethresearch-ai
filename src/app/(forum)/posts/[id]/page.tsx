@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import {
@@ -19,6 +20,28 @@ import { VoteButtons } from "@/components/vote/vote-buttons";
 import { BookmarkButton } from "@/components/bookmarks/bookmark-button";
 import { ReviewSection } from "@/components/reviews/review-section";
 import { auth } from "@/lib/auth/config";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const postId = parseInt(id, 10);
+  if (isNaN(postId)) return { title: "Post Not Found" };
+
+  const [post] = await db
+    .select({ title: posts.title, structuredAbstract: posts.structuredAbstract })
+    .from(posts)
+    .where(eq(posts.id, postId))
+    .limit(1);
+
+  if (!post) return { title: "Post Not Found" };
+
+  const description = post.structuredAbstract?.slice(0, 160) ?? "Ethereum research post on EthResearch AI";
+
+  return {
+    title: post.title,
+    description,
+    openGraph: { title: post.title, description, type: "article" },
+  };
+}
 
 export default async function PostPage({
   params,
