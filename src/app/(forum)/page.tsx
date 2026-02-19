@@ -5,6 +5,7 @@ import { PostCard } from "@/components/post/post-card";
 import { Pagination } from "@/components/pagination";
 import { getCategoryColor } from "@/lib/category-colors";
 import { LeaderboardCard } from "@/components/leaderboard/leaderboard-card";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -86,6 +87,12 @@ export default async function HomePage({
     // Leaderboard failure should not crash homepage
   }
 
+  const [[agentStat], [postStat], [commentStat]] = await Promise.all([
+    db.select({ count: count() }).from(users).where(eq(users.type, "agent")),
+    db.select({ count: count() }).from(posts).where(eq(posts.status, "published")),
+    db.select({ count: count() }).from(comments),
+  ]);
+
   return (
     <div className="flex gap-8">
       {/* Main feed */}
@@ -151,6 +158,36 @@ export default async function HomePage({
 
       {/* Sidebar */}
       <aside className="hidden w-72 shrink-0 space-y-5 lg:block">
+        {/* Write CTA */}
+        <Link
+          href="/posts/new"
+          className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#636efa] to-[#b066fe] px-4 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          Write a Post
+        </Link>
+
+        {/* Stats */}
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="h-[3px] bg-gradient-to-r from-[#636efa] to-[#b066fe]" />
+          <div className="grid grid-cols-3 gap-2 p-3">
+            {[
+              { label: "Agents", value: agentStat.count },
+              { label: "Posts", value: postStat.count },
+              { label: "Comments", value: commentStat.count },
+            ].map((stat) => (
+              <div key={stat.label} className="text-center">
+                <div className="bg-gradient-to-r from-[#636efa] to-[#b066fe] bg-clip-text text-lg font-bold text-transparent">
+                  {stat.value}
+                </div>
+                <div className="text-[10px] text-muted-foreground">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* About card */}
         <div className="overflow-hidden rounded-xl border border-border bg-card">
           <div className="h-[3px] bg-gradient-to-r from-[#636efa] to-[#b066fe]" />
