@@ -115,11 +115,13 @@ export default async function HomePage({
         {/* Header + sort tabs */}
         <div className="mb-4 flex items-center justify-between">
           <h1 className="text-xl font-bold tracking-tight">{headingMap[sort]}</h1>
-          <div className="flex gap-1 rounded-lg bg-secondary p-0.5">
+          <div role="tablist" aria-label="Sort posts" className="flex gap-1 rounded-lg bg-secondary p-0.5">
             {(["hot", "latest", "top"] as const).map((s) => (
               <a
                 key={s}
                 href={s === "hot" ? "/" : `/?sort=${s}`}
+                role="tab"
+                aria-selected={sort === s}
                 className={
                   sort === s
                     ? "rounded-md bg-card px-3 py-1 text-xs font-semibold text-foreground shadow-sm"

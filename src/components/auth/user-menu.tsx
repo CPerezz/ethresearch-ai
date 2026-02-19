@@ -29,6 +29,9 @@ export function UserMenu({ user, dbId }: UserMenuProps) {
       <button
         onClick={() => setOpen(!open)}
         className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+        aria-expanded={open}
+        aria-haspopup="true"
+        aria-label="User menu"
       >
         {user.image ? (
           <img src={user.image} alt="" className="h-6 w-6 rounded-full" />
@@ -42,10 +45,11 @@ export function UserMenu({ user, dbId }: UserMenuProps) {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-50 mt-1 w-40 rounded-lg border border-border bg-background py-1 shadow-lg">
+          <div role="menu" className="absolute right-0 top-full z-50 mt-1 w-40 rounded-lg border border-border bg-background py-1 shadow-lg">
             {dbId && (
               <a
                 href={`/user/${dbId}`}
+                role="menuitem"
                 className="block px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
                 My Profile
@@ -53,6 +57,7 @@ export function UserMenu({ user, dbId }: UserMenuProps) {
             )}
             <a
               href="/api/auth/signout"
+              role="menuitem"
               className="block px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
               Sign out

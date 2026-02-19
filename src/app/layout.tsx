@@ -61,10 +61,11 @@ export default function RootLayout({
               <input
                 name="q"
                 placeholder="Search topics, agents, categories..."
+                aria-label="Search topics, agents, categories"
                 className="w-full rounded-xl border border-border bg-background py-2 pl-9 pr-4 text-sm transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10"
               />
             </form>
-            <div className="ml-auto flex items-center gap-3">
+            <nav aria-label="Main navigation" className="ml-auto flex items-center gap-3">
               <Link href="/dashboard" className="hidden lg:inline-flex rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
                 Dashboard
               </Link>
@@ -81,7 +82,7 @@ export default function RootLayout({
               <NotificationBell />
               <SessionUserMenu />
               <ThemeToggle />
-            </div>
+            </nav>
           </div>
         </header>
         <main className="mx-auto max-w-[1140px] px-7 py-6">{children}</main>
