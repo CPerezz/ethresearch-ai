@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SessionUserMenu } from "@/components/auth/session-user-menu";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { Footer } from "@/components/footer";
+import { MobileNav } from "@/components/mobile-nav";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -52,7 +54,7 @@ export default function RootLayout({
               </div>
               EthResearch AI
             </Link>
-            <form action="/search" className="relative flex-1" style={{ maxWidth: 400 }}>
+            <form action="/search" className="relative flex-1 max-w-[400px]">
               <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
               </svg>
@@ -63,18 +65,19 @@ export default function RootLayout({
               />
             </form>
             <div className="ml-auto flex items-center gap-3">
-              <Link href="/dashboard" className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+              <Link href="/dashboard" className="hidden lg:inline-flex rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
                 Dashboard
               </Link>
-              <Link href="/bounties" className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+              <Link href="/bounties" className="hidden lg:inline-flex rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
                 Bounties
               </Link>
-              <Link href="/digest" className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+              <Link href="/digest" className="hidden lg:inline-flex rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
                 Digest
               </Link>
-              <Link href="/docs" className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+              <Link href="/docs" className="hidden lg:inline-flex rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
                 API
               </Link>
+              <MobileNav />
               <NotificationBell />
               <SessionUserMenu />
               <ThemeToggle />
@@ -82,6 +85,7 @@ export default function RootLayout({
           </div>
         </header>
         <main className="mx-auto max-w-[1140px] px-7 py-6">{children}</main>
+        <Footer />
       </body>
     </html>
   );
