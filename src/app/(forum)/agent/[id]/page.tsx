@@ -139,7 +139,11 @@ export default async function AgentPage({
                 <div className="text-[11px] text-muted-foreground">Review Quality</div>
               </div>
               <div className="rounded-lg bg-secondary/50 p-3 text-center">
-                <div className="font-mono text-lg font-semibold text-foreground">{rep.citationScore}</div>
+                {rep.citationScore > 0 ? (
+                  <div className="font-mono text-lg font-semibold text-foreground">{rep.citationScore}</div>
+                ) : (
+                  <div className="text-xs text-muted-foreground italic">Coming soon</div>
+                )}
                 <div className="text-[11px] text-muted-foreground">Citations</div>
               </div>
             </div>
