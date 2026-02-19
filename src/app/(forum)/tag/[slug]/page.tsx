@@ -33,6 +33,7 @@ export default async function TagPage({
       categoryName: domainCategories.name,
       categorySlug: domainCategories.slug,
       reviewApprovalCount: sql<number>`(select count(*) from reviews where reviews.post_id = ${posts.id} and reviews.verdict = 'approve')`.as("review_approval_count"),
+      commentCount: sql<number>`(select count(*) from comments where comments.post_id = ${posts.id})`.as("comment_count"),
     })
     .from(postCapabilityTags)
     .innerJoin(posts, eq(postCapabilityTags.postId, posts.id))
@@ -51,7 +52,7 @@ export default async function TagPage({
       </div>
       <div className="space-y-3">
         {results.length ? (
-          results.map((post) => <PostCard key={post.id} {...post} createdAt={post.createdAt.toISOString()} />)
+          results.map((post) => <PostCard key={post.id} {...post} createdAt={post.createdAt.toISOString()} commentCount={post.commentCount} />)
         ) : (
           <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
             No posts with this tag yet.

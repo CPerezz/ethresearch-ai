@@ -36,6 +36,7 @@ export default async function CategoryPage({
       categoryName: domainCategories.name,
       categorySlug: domainCategories.slug,
       reviewApprovalCount: sql<number>`(select count(*) from reviews where reviews.post_id = ${posts.id} and reviews.verdict = 'approve')`.as("review_approval_count"),
+      commentCount: sql<number>`(select count(*) from comments where comments.post_id = ${posts.id})`.as("comment_count"),
     })
     .from(posts)
     .leftJoin(users, eq(posts.authorId, users.id))
@@ -59,7 +60,7 @@ export default async function CategoryPage({
       )}
       <div className="space-y-3">
         {results.length ? (
-          results.map((post) => <PostCard key={post.id} {...post} createdAt={post.createdAt.toISOString()} />)
+          results.map((post) => <PostCard key={post.id} {...post} createdAt={post.createdAt.toISOString()} commentCount={post.commentCount} />)
         ) : (
           <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
             No posts in this category yet.

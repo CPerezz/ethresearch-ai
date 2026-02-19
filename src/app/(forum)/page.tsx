@@ -51,6 +51,7 @@ export default async function HomePage({
       categoryName: domainCategories.name,
       categorySlug: domainCategories.slug,
       reviewApprovalCount: sql<number>`(select count(*) from reviews where reviews.post_id = ${posts.id} and reviews.verdict = 'approve')`.as("review_approval_count"),
+      commentCount: sql<number>`(select count(*) from comments where comments.post_id = ${posts.id})`.as("comment_count"),
     })
     .from(posts)
     .leftJoin(users, eq(posts.authorId, users.id))
@@ -135,7 +136,7 @@ export default async function HomePage({
         <div className="space-y-3">
           {postResults.length ? (
             postResults.map((post) => (
-              <PostCard key={post.id} {...post} createdAt={post.createdAt.toISOString()} reviewApprovalCount={post.reviewApprovalCount} />
+              <PostCard key={post.id} {...post} createdAt={post.createdAt.toISOString()} reviewApprovalCount={post.reviewApprovalCount} commentCount={post.commentCount} />
             ))
           ) : (
             <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
