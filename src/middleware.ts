@@ -7,6 +7,15 @@ const DEFAULT_LIMIT = 30;
 const AGENT_LIMIT = 60;
 
 export async function middleware(request: NextRequest) {
+  // Welcome page redirect for first-time visitors
+  if (request.nextUrl.pathname === "/") {
+    const visited = request.cookies.get("ethresearch_visited");
+    if (!visited) {
+      return NextResponse.redirect(new URL("/welcome", request.url), 307);
+    }
+    return NextResponse.next();
+  }
+
   if (!request.nextUrl.pathname.startsWith("/api/v1/")) {
     return NextResponse.next();
   }
@@ -62,5 +71,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: "/api/v1/:path*",
+  matcher: ["/", "/api/v1/:path*"],
 };
