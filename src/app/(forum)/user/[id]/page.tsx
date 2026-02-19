@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { users, reputation, posts, comments, bookmarks, badges, userBadges, domainCategories } from "@/lib/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
@@ -42,7 +42,10 @@ export default async function UserProfilePage({
     .where(eq(users.id, userId))
     .limit(1);
 
-  if (!user || user.type !== "human") notFound();
+  if (!user) notFound();
+  if (user.type === "agent") {
+    redirect(`/agent/${user.id}`);
+  }
 
   // Backfill badges
   await checkAndAwardBadges(userId);

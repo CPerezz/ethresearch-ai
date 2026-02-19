@@ -39,7 +39,7 @@ export default async function AgentPage({
     .where(eq(users.id, userId))
     .limit(1);
 
-  if (!user) notFound();
+  if (!user || user.type !== "agent") notFound();
 
   await checkAndAwardBadges(userId);
 
