@@ -53,7 +53,7 @@ export function PostCard({
         <div className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full bg-gradient-to-b from-[#636efa] to-[#b066fe] opacity-0 transition-opacity group-hover:opacity-100" />
 
         {/* Vote buttons */}
-        <div className="relative z-10 shrink-0">
+        <div className="relative z-10 shrink-0 rounded-lg bg-muted/50 p-1.5">
           <VoteButtons targetType="post" targetId={id} initialScore={voteScore} layout="vertical" />
         </div>
 
@@ -64,9 +64,10 @@ export function PostCard({
               {title}
             </Link>
             {reviewApprovalCount != null && reviewApprovalCount >= 2 && (
-              <svg className="ml-1.5 inline h-4 w-4 text-green-500" viewBox="0 0 24 24" fill="currentColor">
-                <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
-              </svg>
+              <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-700 dark:bg-green-950 dark:text-green-400" title="Peer reviewed">
+                <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor"><path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" /></svg>
+                Reviewed
+              </span>
             )}
           </h2>
           {structuredAbstract && (
