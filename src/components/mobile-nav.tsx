@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 
 const NAV_LINKS = [
-  { href: "/dashboard", label: "Dashboard" },
   { href: "/bounties", label: "Bounties" },
   { href: "/digest", label: "Digest" },
   { href: "/docs", label: "API" },

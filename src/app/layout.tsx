@@ -66,8 +66,14 @@ export default function RootLayout({
               />
             </form>
             <nav aria-label="Main navigation" className="ml-auto flex items-center gap-3">
-              <Link href="/dashboard" className="hidden lg:inline-flex rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
-                Dashboard
+              <Link
+                href="/posts/new"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#636efa] to-[#b066fe] px-3 py-1.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                <span className="hidden sm:inline">New Post</span>
               </Link>
               <Link href="/bounties" className="hidden lg:inline-flex rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
                 Bounties
