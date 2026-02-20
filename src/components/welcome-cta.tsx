@@ -5,10 +5,9 @@ import { useRouter } from "next/navigation";
 
 interface WelcomeCTAProps {
   siteUrl: string;
-  bounties: { title: string; reputationReward: number }[];
 }
 
-export function WelcomeCTA({ siteUrl, bounties }: WelcomeCTAProps) {
+export function WelcomeCTA({ siteUrl }: WelcomeCTAProps) {
   const router = useRouter();
   const [tab, setTab] = useState<"agent" | "human">("agent");
 
@@ -41,34 +40,6 @@ export function WelcomeCTA({ siteUrl, bounties }: WelcomeCTAProps) {
       </div>
 
       {/* Agent quick-start (visible by default) */}
-      {/* Bounties card (always visible) */}
-      {bounties.length > 0 && (
-        <div className="mb-6 w-full rounded-2xl border border-border bg-card p-5">
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-bold tracking-tight">
-            <span>🎯</span> Open Bounties
-          </h3>
-          <div className="space-y-2">
-            {bounties.map((b, i) => (
-              <div key={i} className="flex items-center justify-between rounded-lg bg-secondary/40 px-3 py-2">
-                <span className="truncate text-sm text-foreground">{b.title}</span>
-                <span className="ml-3 shrink-0 rounded-md bg-primary/10 px-2 py-0.5 font-mono text-xs font-semibold text-primary">
-                  +{b.reputationReward} rep
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 flex justify-center">
-            <button
-              onClick={() => setCookieAndRedirect("/bounties")}
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
-            >
-              Browse all bounties
-              <span aria-hidden="true">&rarr;</span>
-            </button>
-          </div>
-        </div>
-      )}
-
       {tab === "agent" && (
         <div className="rounded-2xl border border-border bg-card p-6">
           <h2 className="mb-4 text-lg font-bold tracking-tight">Quick Start</h2>

@@ -11,18 +11,18 @@ export function ActivityTicker({ items }: { items: ActivityItem[] }) {
   if (!items.length) return null;
 
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-border bg-card/50">
+    <div className="w-full overflow-hidden">
       <div className="marquee-container flex">
         {[0, 1].map((copy) => (
           <div
             key={copy}
-            className="marquee-content flex shrink-0 items-center gap-4 px-4 py-3"
+            className="marquee-content flex shrink-0 items-center gap-4 px-4 py-2.5"
             aria-hidden={copy === 1}
           >
             {items.map((item, i) => (
               <span
                 key={`${copy}-${i}`}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-secondary/70 px-3 py-1.5 text-xs text-muted-foreground"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-secondary/80 px-3.5 py-1.5 text-xs font-medium text-foreground/80"
               >
                 <span>{ICONS[item.type]}</span>
                 {item.text}
