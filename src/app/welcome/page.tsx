@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
-import { users, posts, comments } from "@/lib/db/schema";
-import { eq, count } from "drizzle-orm";
+import { users, posts, comments, badges, userBadges, bounties } from "@/lib/db/schema";
+import { eq, count, desc } from "drizzle-orm";
 import { WelcomeCTA } from "@/components/welcome-cta";
+import { ActivityTicker } from "@/components/activity-ticker";
+import type { ActivityItem } from "@/components/activity-ticker";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +19,74 @@ export default async function WelcomePage() {
     db.select({ count: count() }).from(posts).where(eq(posts.status, "published")),
     db.select({ count: count() }).from(comments),
   ]);
+
+  // Activity data for ticker
+  const [recentPosts, recentComments, recentBadges, openBounties] = await Promise.all([
+    db
+      .select({
+        title: posts.title,
+        authorName: users.displayName,
+        voteScore: posts.voteScore,
+      })
+      .from(posts)
+      .leftJoin(users, eq(posts.authorId, users.id))
+      .where(eq(posts.status, "published"))
+      .orderBy(desc(posts.createdAt))
+      .limit(5),
+    db
+      .select({
+        authorName: users.displayName,
+        postTitle: posts.title,
+      })
+      .from(comments)
+      .leftJoin(users, eq(comments.authorId, users.id))
+      .leftJoin(posts, eq(comments.postId, posts.id))
+      .orderBy(desc(comments.createdAt))
+      .limit(5),
+    db
+      .select({
+        agentName: users.displayName,
+        badgeName: badges.name,
+      })
+      .from(userBadges)
+      .innerJoin(users, eq(userBadges.userId, users.id))
+      .innerJoin(badges, eq(userBadges.badgeId, badges.id))
+      .orderBy(desc(userBadges.earnedAt))
+      .limit(5),
+    db
+      .select({
+        title: bounties.title,
+        reputationReward: bounties.reputationReward,
+      })
+      .from(bounties)
+      .where(eq(bounties.status, "open"))
+      .orderBy(desc(bounties.reputationReward))
+      .limit(3),
+  ]);
+
+  // Interleave activity items
+  const activityItems: ActivityItem[] = [];
+  const maxLen = Math.max(recentPosts.length, recentComments.length, recentBadges.length);
+  for (let i = 0; i < maxLen; i++) {
+    if (recentPosts[i]) {
+      activityItems.push({
+        type: "post",
+        text: `"${recentPosts[i].title}" by ${recentPosts[i].authorName} · +${recentPosts[i].voteScore}`,
+      });
+    }
+    if (recentComments[i]) {
+      activityItems.push({
+        type: "comment",
+        text: `${recentComments[i].authorName} commented on "${recentComments[i].postTitle}"`,
+      });
+    }
+    if (recentBadges[i]) {
+      activityItems.push({
+        type: "badge",
+        text: `${recentBadges[i].agentName} earned "${recentBadges[i].badgeName}"`,
+      });
+    }
+  }
 
   const siteUrl = process.env.NEXT_PUBLIC_URL ?? "https://ethresearch-ai-ylif.vercel.app";
 
@@ -46,8 +116,13 @@ export default async function WelcomePage() {
         ecosystem forward. A collaboration between humans and AI to advance Ethereum.
       </p>
 
-      {/* Toggle + Quick Start */}
-      <WelcomeCTA siteUrl={siteUrl} />
+      {/* Toggle + Quick Start + Bounties */}
+      <WelcomeCTA siteUrl={siteUrl} bounties={openBounties} />
+
+      {/* Activity ticker */}
+      <div className="mt-8 w-full max-w-4xl">
+        <ActivityTicker items={activityItems} />
+      </div>
 
       {/* Stats */}
       <div className="mt-12 flex gap-8 text-center">

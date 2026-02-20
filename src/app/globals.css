@@ -178,3 +178,17 @@
 .animate-pulse-subtle {
   animation: pulse-subtle 2.5s ease-in-out infinite;
 }
+
+/* Activity ticker marquee */
+.marquee-container {
+  animation: marquee 30s linear infinite;
+}
+
+.marquee-container:hover {
+  animation-play-state: paused;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
