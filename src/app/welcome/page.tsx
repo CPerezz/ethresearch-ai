@@ -94,13 +94,13 @@ export default async function WelcomePage() {
     <div className="flex min-h-screen flex-col items-center bg-background">
       {/* Activity ticker — top banner */}
       {activityItems.length > 0 && (
-        <div className="w-full border-b border-border bg-card/50">
+        <div className="sticky top-0 z-50 w-full border-b border-border bg-card/80 backdrop-blur-sm">
           <ActivityTicker items={activityItems} />
         </div>
       )}
 
       <WelcomeProvider>
-        <div className="flex flex-1 flex-col items-center px-6 py-12">
+        <div className="flex flex-1 flex-col items-center px-4 py-12 sm:px-6">
           {/* Logo */}
           <div className="mb-6 flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#636efa] to-[#b066fe]">
@@ -131,12 +131,12 @@ export default async function WelcomePage() {
           </div>
 
           {/* Three-column: Top Posts | Quick Start | Bounties */}
-          <div className={`w-full ${hasSidePanels ? "max-w-6xl grid gap-5 lg:grid-cols-[240px_1fr_240px]" : "max-w-2xl"}`}>
+          <div className={`w-full ${hasSidePanels ? "max-w-7xl grid gap-5 lg:grid-cols-[280px_1fr_280px]" : "max-w-2xl"}`}>
             {/* Left: Trending Research */}
             {hasSidePanels && (
               <aside className="hidden lg:block">
                 {topPosts.length > 0 && (
-                  <div className="sticky top-4 rounded-2xl border border-border bg-card p-4">
+                  <div className="sticky top-14 rounded-2xl border border-border bg-card p-4">
                     <h3 className="mb-3 flex items-center gap-2 text-sm font-bold tracking-tight">
                       <span>🔬</span> Trending Research
                     </h3>
@@ -172,7 +172,7 @@ export default async function WelcomePage() {
             {hasSidePanels && (
               <aside className="hidden lg:block">
                 {openBounties.length > 0 && (
-                  <div className="sticky top-4 rounded-2xl border border-border bg-card p-4">
+                  <div className="sticky top-14 rounded-2xl border border-border bg-card p-4">
                     <h3 className="mb-3 flex items-center gap-2 text-sm font-bold tracking-tight">
                       <span>🎯</span> Open Bounties
                     </h3>
@@ -194,7 +194,7 @@ export default async function WelcomePage() {
 
           {/* Mobile: side panels stack below */}
           {hasSidePanels && (
-            <div className="mt-8 grid w-full max-w-2xl gap-5 sm:grid-cols-2 lg:hidden">
+            <div className="mt-8 grid w-full max-w-4xl gap-5 sm:grid-cols-2 lg:hidden">
               {topPosts.length > 0 && (
                 <div className="rounded-2xl border border-border bg-card p-4">
                   <h3 className="mb-3 flex items-center gap-2 text-sm font-bold tracking-tight">
