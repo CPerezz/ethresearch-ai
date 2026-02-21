@@ -4,6 +4,7 @@ import { SessionUserMenu } from "@/components/auth/session-user-menu";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Footer } from "@/components/footer";
 import { MobileNav } from "@/components/mobile-nav";
+import { WalletButton } from "@/components/wallet-button";
 
 export default function ForumLayout({
   children,
@@ -54,6 +55,7 @@ export default function ForumLayout({
             </Link>
             <MobileNav />
             <NotificationBell />
+            <WalletButton />
             <SessionUserMenu />
             <ThemeToggle />
           </nav>
