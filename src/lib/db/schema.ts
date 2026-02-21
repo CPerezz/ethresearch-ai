@@ -25,8 +25,16 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "badge_earned",
   "post_review",
   "bounty_won",
+  "bounty_funded",
+  "bounty_payout",
+  "bounty_expired",
+  "bounty_refunded",
 ]);
 export const bountyStatusEnum = pgEnum("bounty_status", ["open", "answered", "closed"]);
+export const escrowStatusEnum = pgEnum("escrow_status", [
+  "pending", "funded", "paid", "refunded", "split", "expired",
+]);
+export const bountyTxTypeEnum = pgEnum("bounty_tx_type", ["fund", "payout", "refund", "split"]);
 export const reviewVerdictEnum = pgEnum("review_verdict", ["approve", "reject", "needs_revision"]);
 
 // Users
@@ -201,12 +209,35 @@ export const bounties = pgTable("bounties", {
   status: bountyStatusEnum("status").notNull().default("open"),
   winnerPostId: integer("winner_post_id"),
   reputationReward: integer("reputation_reward").notNull().default(25),
-  rewardEth: varchar("reward_eth", { length: 50 }),
+  ethAmount: varchar("eth_amount", { length: 78 }),
+  chainId: integer("chain_id"),
+  escrowStatus: escrowStatusEnum("escrow_status"),
+  deadline: timestamp("deadline", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   closedAt: timestamp("closed_at", { withTimezone: true }),
 }, (table) => [
   index("bounties_author_idx").on(table.authorId),
   index("bounties_status_idx").on(table.status),
+  index("bounties_escrow_status_idx").on(table.escrowStatus),
+  index("bounties_deadline_idx").on(table.deadline),
+]);
+
+// Bounty Transactions
+export const bountyTransactions = pgTable("bounty_transactions", {
+  id: serial("id").primaryKey(),
+  bountyId: integer("bounty_id").notNull().references(() => bounties.id),
+  txHash: varchar("tx_hash", { length: 66 }).notNull(),
+  txType: bountyTxTypeEnum("tx_type").notNull(),
+  chainId: integer("chain_id").notNull(),
+  fromAddress: varchar("from_address", { length: 42 }),
+  toAddress: varchar("to_address", { length: 42 }),
+  amount: varchar("amount", { length: 78 }),
+  confirmed: boolean("confirmed").notNull().default(false),
+  blockNumber: integer("block_number"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("bounty_tx_bounty_idx").on(table.bountyId),
+  uniqueIndex("bounty_tx_hash_chain_idx").on(table.txHash, table.chainId),
 ]);
 
 // Reviews
@@ -276,9 +307,15 @@ export const bookmarksRelations = relations(bookmarks, ({ one }) => ({
   post: one(posts, { fields: [bookmarks.postId], references: [posts.id] }),
 }));
 
-export const bountiesRelations = relations(bounties, ({ one }) => ({
+export const bountiesRelations = relations(bounties, ({ one, many }) => ({
   author: one(users, { fields: [bounties.authorId], references: [users.id] }),
   category: one(domainCategories, { fields: [bounties.categoryId], references: [domainCategories.id] }),
+  winnerPost: one(posts, { fields: [bounties.winnerPostId], references: [posts.id] }),
+  transactions: many(bountyTransactions),
+}));
+
+export const bountyTransactionsRelations = relations(bountyTransactions, ({ one }) => ({
+  bounty: one(bounties, { fields: [bountyTransactions.bountyId], references: [bounties.id] }),
 }));
 
 export const reviewsRelations = relations(reviews, ({ one }) => ({

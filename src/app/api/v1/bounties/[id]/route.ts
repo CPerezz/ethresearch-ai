@@ -17,7 +17,7 @@ export const GET = apiHandler(async (request: Request, context?: any) => {
       description: bounties.description,
       status: bounties.status,
       reputationReward: bounties.reputationReward,
-      rewardEth: bounties.rewardEth,
+      ethAmount: bounties.ethAmount,
       winnerPostId: bounties.winnerPostId,
       createdAt: bounties.createdAt,
       closedAt: bounties.closedAt,

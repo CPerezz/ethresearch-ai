@@ -15,6 +15,13 @@
       "when": 1771699119545,
       "tag": "0001_dazzling_vance_astro",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1771717860801,
+      "tag": "0002_add-eth-escrow-fields",
+      "breakpoints": true
     }
   ]
 }

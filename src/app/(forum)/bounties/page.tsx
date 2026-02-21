@@ -56,7 +56,7 @@ export default async function BountiesPage({
       description: bounties.description,
       status: bounties.status,
       reputationReward: bounties.reputationReward,
-      rewardEth: bounties.rewardEth,
+      ethAmount: bounties.ethAmount,
       createdAt: bounties.createdAt,
       authorName: users.displayName,
       categoryName: domainCategories.name,

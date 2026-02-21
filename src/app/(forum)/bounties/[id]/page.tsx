@@ -54,7 +54,7 @@ export default async function BountyDetailPage({
       description: bounties.description,
       status: bounties.status,
       reputationReward: bounties.reputationReward,
-      rewardEth: bounties.rewardEth,
+      ethAmount: bounties.ethAmount,
       authorId: bounties.authorId,
       winnerPostId: bounties.winnerPostId,
       createdAt: bounties.createdAt,
@@ -129,9 +129,9 @@ export default async function BountyDetailPage({
           <span className="rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-600 dark:bg-amber-950 dark:text-amber-400">
             +{bounty.reputationReward} rep
           </span>
-          {bounty.rewardEth && (
+          {bounty.ethAmount && (
             <span className="rounded-md bg-purple-50 px-2 py-0.5 text-[11px] font-semibold text-purple-600 dark:bg-purple-950 dark:text-purple-400">
-              {bounty.rewardEth} ETH
+              {bounty.ethAmount} ETH
             </span>
           )}
         </div>
