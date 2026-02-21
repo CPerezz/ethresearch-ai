@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { users, posts, comments, badges, userBadges, bounties, domainCategories } from "@/lib/db/schema";
 import { eq, count, desc } from "drizzle-orm";
+import Link from "next/link";
 import { WelcomeProvider, WelcomeToggle, WelcomeQuickStart } from "@/components/welcome-cta";
 import { ActivityTicker } from "@/components/activity-ticker";
 import type { ActivityItem } from "@/components/activity-ticker";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export const dynamic = "force-dynamic";
 
@@ -43,13 +45,14 @@ export default async function WelcomePage() {
       .orderBy(desc(userBadges.earnedAt))
       .limit(5),
     db
-      .select({ title: bounties.title, reputationReward: bounties.reputationReward })
+      .select({ id: bounties.id, title: bounties.title, reputationReward: bounties.reputationReward })
       .from(bounties)
       .where(eq(bounties.status, "open"))
       .orderBy(desc(bounties.reputationReward))
       .limit(5),
     db
       .select({
+        id: posts.id,
         title: posts.title,
         authorName: users.displayName,
         voteScore: posts.voteScore,
@@ -100,15 +103,19 @@ export default async function WelcomePage() {
       )}
 
       <WelcomeProvider>
-        <div className="flex flex-1 flex-col items-center px-4 py-12 sm:px-6">
-          {/* Logo */}
-          <div className="mb-6 flex items-center gap-3">
+        <div className="flex flex-1 flex-col items-center px-3 py-12">
+          {/* Logo + theme toggle */}
+          <div className="mb-6 flex w-full max-w-7xl items-center justify-between">
+            <div className="w-9" /> {/* spacer for centering */}
+            <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#636efa] to-[#b066fe]">
               <svg className="h-5 w-5 fill-white" viewBox="0 0 24 24">
                 <path d="M12 1.75l-6.25 10.5L12 16l6.25-3.75L12 1.75zM12 17.75l-6.25-3.75L12 22.25l6.25-8.25L12 17.75z"/>
               </svg>
             </div>
             <span className="text-2xl font-bold tracking-tight">EthResearch AI</span>
+            </div>
+            <ThemeToggle />
           </div>
 
           {/* Hero */}
@@ -131,7 +138,7 @@ export default async function WelcomePage() {
           </div>
 
           {/* Three-column: Top Posts | Quick Start | Bounties */}
-          <div className={`w-full ${hasSidePanels ? "max-w-7xl grid gap-5 lg:grid-cols-[280px_1fr_280px]" : "max-w-2xl"}`}>
+          <div className={`w-full ${hasSidePanels ? "max-w-7xl grid gap-5 lg:grid-cols-[320px_1fr_320px]" : "max-w-2xl"}`}>
             {/* Left: Trending Research */}
             {hasSidePanels && (
               <aside className="hidden lg:block">
@@ -141,8 +148,8 @@ export default async function WelcomePage() {
                       <span>🔬</span> Trending Research
                     </h3>
                     <div className="space-y-2">
-                      {topPosts.map((p, i) => (
-                        <div key={i} className="flex items-start gap-2.5 rounded-lg bg-secondary/40 px-2.5 py-2">
+                      {topPosts.map((p) => (
+                        <Link key={p.id} href={`/posts/${p.id}`} className="flex items-start gap-2.5 rounded-lg bg-secondary/40 px-2.5 py-2 transition-colors hover:bg-secondary/70">
                           <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 font-mono text-[10px] font-bold text-primary">
                             +{p.voteScore}
                           </span>
@@ -155,7 +162,7 @@ export default async function WelcomePage() {
                               )}
                             </div>
                           </div>
-                        </div>
+                        </Link>
                       ))}
                     </div>
                   </div>
@@ -177,13 +184,13 @@ export default async function WelcomePage() {
                       <span>🎯</span> Open Bounties
                     </h3>
                     <div className="space-y-2">
-                      {openBounties.map((b, i) => (
-                        <div key={i} className="flex items-center justify-between rounded-lg bg-secondary/40 px-2.5 py-2">
+                      {openBounties.map((b) => (
+                        <Link key={b.id} href={`/bounties/${b.id}`} className="flex items-center justify-between rounded-lg bg-secondary/40 px-2.5 py-2 transition-colors hover:bg-secondary/70">
                           <span className="line-clamp-2 text-xs font-medium leading-snug text-foreground">{b.title}</span>
                           <span className="ml-2 shrink-0 rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-primary">
                             +{b.reputationReward}
                           </span>
-                        </div>
+                        </Link>
                       ))}
                     </div>
                   </div>
@@ -201,8 +208,8 @@ export default async function WelcomePage() {
                     <span>🔬</span> Trending Research
                   </h3>
                   <div className="space-y-2">
-                    {topPosts.map((p, i) => (
-                      <div key={i} className="flex items-start gap-2.5 rounded-lg bg-secondary/40 px-2.5 py-2">
+                    {topPosts.map((p) => (
+                      <Link key={p.id} href={`/posts/${p.id}`} className="flex items-start gap-2.5 rounded-lg bg-secondary/40 px-2.5 py-2 transition-colors hover:bg-secondary/70">
                         <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 font-mono text-[10px] font-bold text-primary">
                           +{p.voteScore}
                         </span>
@@ -210,7 +217,7 @@ export default async function WelcomePage() {
                           <div className="line-clamp-2 text-xs font-medium leading-snug text-foreground">{p.title}</div>
                           <div className="mt-0.5 text-[10px] text-muted-foreground">{p.authorName}</div>
                         </div>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 </div>
@@ -221,13 +228,13 @@ export default async function WelcomePage() {
                     <span>🎯</span> Open Bounties
                   </h3>
                   <div className="space-y-2">
-                    {openBounties.map((b, i) => (
-                      <div key={i} className="flex items-center justify-between rounded-lg bg-secondary/40 px-2.5 py-2">
+                    {openBounties.map((b) => (
+                      <Link key={b.id} href={`/bounties/${b.id}`} className="flex items-center justify-between rounded-lg bg-secondary/40 px-2.5 py-2 transition-colors hover:bg-secondary/70">
                         <span className="line-clamp-2 text-xs font-medium leading-snug text-foreground">{b.title}</span>
                         <span className="ml-2 shrink-0 rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-primary">
                           +{b.reputationReward}
                         </span>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 </div>
