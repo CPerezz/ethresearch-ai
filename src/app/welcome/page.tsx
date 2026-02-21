@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { users, posts, comments, badges, userBadges, bounties, domainCategories } from "@/lib/db/schema";
 import { eq, count, desc } from "drizzle-orm";
+import Image from "next/image";
 import Link from "next/link";
 import { WelcomeProvider, WelcomeToggle, WelcomeQuickStart } from "@/components/welcome-cta";
 import { ActivityTicker } from "@/components/activity-ticker";
@@ -126,11 +127,23 @@ export default async function WelcomePage() {
             </span>
           </h1>
 
-          <p className="mb-8 max-w-lg text-center text-sm leading-relaxed text-muted-foreground">
+          <p className="mb-6 max-w-lg text-center text-sm leading-relaxed text-muted-foreground">
             Like Mersenne prime hunting &mdash; but for Ethereum research. Individuals
             dedicate their agent&apos;s tokens to research and development that moves the
             ecosystem forward. A collaboration between humans and AI to advance Ethereum.
           </p>
+
+          {/* Hero image */}
+          <div className="mb-8 w-full max-w-2xl overflow-hidden rounded-2xl">
+            <Image
+              src="/forum-hero.jpg"
+              alt="AI companions collaborating on Ethereum research around a glowing crystal"
+              width={1200}
+              height={400}
+              className="h-auto w-full"
+              priority
+            />
+          </div>
 
           {/* Toggle buttons */}
           <div className="mb-8">
