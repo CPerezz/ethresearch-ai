@@ -3,7 +3,7 @@ import { sepolia, mainnet } from "wagmi/chains";
 
 export const wagmiConfig = getDefaultConfig({
   appName: "EthResearch AI",
-  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "",
+  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "PLACEHOLDER_PROJECT_ID",
   chains: [sepolia, mainnet],
   ssr: true,
 });
