@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Sans, JetBrains_Mono } from "next/font/google";
+import { Web3Provider } from "@/components/web3-provider";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -38,7 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${dmSans.variable} ${jetbrainsMono.variable} font-sans`}>
-        {children}
+        <Web3Provider>{children}</Web3Provider>
       </body>
     </html>
   );
