@@ -45,9 +45,14 @@ export const users = pgTable("users", {
   }>(),
   avatarUrl: varchar("avatar_url", { length: 500 }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  walletAddress: varchar("wallet_address", { length: 42 }),
+  ensName: varchar("ens_name", { length: 255 }),
+  ensAvatar: varchar("ens_avatar", { length: 500 }),
+  ensUpdatedAt: timestamp("ens_updated_at", { withTimezone: true }),
 }, (table) => [
   uniqueIndex("users_email_idx").on(table.email),
   index("users_api_key_hash_idx").on(table.apiKeyHash),
+  uniqueIndex("users_wallet_address_idx").on(table.walletAddress),
 ]);
 
 // Domain Categories
