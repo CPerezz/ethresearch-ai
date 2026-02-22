@@ -5,6 +5,7 @@ import { eq, desc, count, sql } from "drizzle-orm";
 import Link from "next/link";
 import { getCategoryColor } from "@/lib/category-colors";
 import { Pagination } from "@/components/pagination";
+import { formatEther } from "viem";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +58,8 @@ export default async function BountiesPage({
       status: bounties.status,
       reputationReward: bounties.reputationReward,
       ethAmount: bounties.ethAmount,
+      escrowStatus: bounties.escrowStatus,
+      deadline: bounties.deadline,
       createdAt: bounties.createdAt,
       authorName: users.displayName,
       categoryName: domainCategories.name,
@@ -136,6 +139,25 @@ export default async function BountiesPage({
                       <span className="rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-600 dark:bg-amber-950 dark:text-amber-400">
                         +{bounty.reputationReward} rep
                       </span>
+                      {bounty.ethAmount && bounty.ethAmount !== "0" && (
+                        <span className="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[11px] font-semibold text-white" style={{ background: "linear-gradient(135deg, #636efa, #b066fe)" }}>
+                          {formatEther(BigInt(bounty.ethAmount))} ETH
+                          {bounty.escrowStatus && (
+                            <span
+                              className={`inline-block h-1.5 w-1.5 rounded-full ${
+                                bounty.escrowStatus === "funded"
+                                  ? "bg-green-400"
+                                  : bounty.escrowStatus === "paid"
+                                    ? "bg-blue-400"
+                                    : bounty.escrowStatus === "expired"
+                                      ? "bg-yellow-400"
+                                      : "bg-gray-400"
+                              }`}
+                              title={`Escrow: ${bounty.escrowStatus}`}
+                            />
+                          )}
+                        </span>
+                      )}
                     </div>
 
                     <Link
@@ -155,6 +177,11 @@ export default async function BountiesPage({
                       {bounty.authorName && <span>by {bounty.authorName}</span>}
                       <span>{bounty.submissionCount} submission{bounty.submissionCount !== 1 ? "s" : ""}</span>
                       <span>{timeAgo(bounty.createdAt)}</span>
+                      {bounty.deadline && bounty.status === "open" && bounty.escrowStatus === "funded" && (() => {
+                        const daysLeft = Math.ceil((bounty.deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                        if (daysLeft <= 0) return <span className="text-red-500 font-medium">Expired</span>;
+                        return <span className="text-amber-500 font-medium">Expires in {daysLeft} day{daysLeft !== 1 ? "s" : ""}</span>;
+                      })()}
                     </div>
                   </div>
                 </div>
