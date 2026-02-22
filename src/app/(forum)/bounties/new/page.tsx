@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useFundBounty } from "@/lib/web3/use-bounty-escrow";
@@ -10,6 +10,71 @@ import { parseEther } from "viem";
 import { DEFAULT_CHAIN_ID } from "@/lib/web3/config";
 
 type TxState = "idle" | "submitting" | "confirming" | "recording" | "funded";
+
+function fireConfetti() {
+  const duration = 1500;
+  const end = Date.now() + duration;
+  const colors = ["#636efa", "#b066fe", "#22c55e", "#f59e0b", "#ffffff"];
+
+  function frame() {
+    const container = document.getElementById("confetti-container");
+    if (!container || Date.now() > end) return;
+
+    for (let i = 0; i < 3; i++) {
+      const particle = document.createElement("div");
+      const size = Math.random() * 8 + 4;
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      const startX = Math.random() * window.innerWidth;
+      const drift = (Math.random() - 0.5) * 200;
+
+      Object.assign(particle.style, {
+        position: "fixed",
+        left: `${startX}px`,
+        top: "-10px",
+        width: `${size}px`,
+        height: `${size}px`,
+        backgroundColor: color,
+        borderRadius: Math.random() > 0.5 ? "50%" : "2px",
+        pointerEvents: "none",
+        zIndex: "9999",
+        opacity: "1",
+        transform: `rotate(${Math.random() * 360}deg)`,
+        transition: "none",
+      });
+
+      container.appendChild(particle);
+
+      const fallDuration = Math.random() * 1500 + 1000;
+      const startTime = Date.now();
+
+      function animateParticle() {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / fallDuration, 1);
+        const y = progress * window.innerHeight * 1.2;
+        const x = startX + drift * progress + Math.sin(progress * 6) * 20;
+        const opacity = 1 - progress;
+        const rotation = progress * 720;
+
+        particle.style.transform = `translate(${x - startX}px, ${y}px) rotate(${rotation}deg)`;
+        particle.style.opacity = String(opacity);
+
+        if (progress < 1) {
+          requestAnimationFrame(animateParticle);
+        } else {
+          particle.remove();
+        }
+      }
+      requestAnimationFrame(animateParticle);
+    }
+    requestAnimationFrame(frame);
+  }
+  frame();
+
+  setTimeout(() => {
+    const container = document.getElementById("confetti-container");
+    if (container) container.innerHTML = "";
+  }, duration + 2000);
+}
 
 export default function NewBountyPage() {
   const router = useRouter();
@@ -70,9 +135,10 @@ export default function NewBountyPage() {
           throw new Error(data.error || `Server error ${res.status}`);
         }
         setTxState("funded");
+        fireConfetti();
         setTimeout(() => {
           router.push(`/bounties/${pendingBountyId}`);
-        }, 1500);
+        }, 2000);
       } catch {
         setError("Failed to record funding transaction. Your bounty was created but funding may not be recorded.");
         setTxState("idle");
@@ -145,8 +211,9 @@ export default function NewBountyPage() {
         return;
       }
 
-      // No ETH — redirect immediately
-      router.push(`/bounties/${bountyId}`);
+      // No ETH — celebrate and redirect
+      fireConfetti();
+      setTimeout(() => router.push(`/bounties/${bountyId}`), 1500);
     } catch {
       setError("Something went wrong. Please try again.");
       setSubmitting(false);
@@ -158,13 +225,14 @@ export default function NewBountyPage() {
     submitting: "Submitting transaction...",
     confirming: "Confirming on-chain...",
     recording: "Recording funding...",
-    funded: "Funded!",
+    funded: "Bounty funded! Redirecting...",
   }[txState];
 
   const isFormDisabled = submitting || txState !== "idle";
 
   return (
     <div className="mx-auto max-w-2xl">
+      <div id="confetti-container" className="pointer-events-none fixed inset-0 z-50" />
       <div className="mb-6">
         <Link
           href="/bounties"
@@ -191,13 +259,21 @@ export default function NewBountyPage() {
         )}
 
         {txStatusMessage && (
-          <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400 flex items-center gap-2">
-            {txState !== "funded" && (
+          <div className={`rounded-lg border px-4 py-3 text-sm flex items-center gap-2 ${
+            txState === "funded"
+              ? "border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-400"
+              : "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400"
+          }`}>
+            {txState === "funded" ? (
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            ) : txState !== "idle" ? (
               <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-            )}
+            ) : null}
             {txStatusMessage}
           </div>
         )}
