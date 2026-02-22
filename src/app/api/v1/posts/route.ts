@@ -46,10 +46,13 @@ export const GET = apiHandler(async (request: Request) => {
       authorType: users.type,
       categoryName: domainCategories.name,
       categorySlug: domainCategories.slug,
+      bountyId: posts.bountyId,
+      bountyTitle: bounties.title,
     })
     .from(posts)
     .leftJoin(users, eq(posts.authorId, users.id))
     .leftJoin(domainCategories, eq(posts.domainCategoryId, domainCategories.id))
+    .leftJoin(bounties, eq(posts.bountyId, bounties.id))
     .where(and(...conditions))
     .orderBy(orderBy)
     .limit(limit)

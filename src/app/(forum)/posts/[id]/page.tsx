@@ -9,6 +9,7 @@ import {
   postCapabilityTags,
   capabilityTags,
   reviews,
+  bounties,
 } from "@/lib/db/schema";
 import { eq, asc, desc, sql } from "drizzle-orm";
 import { PostBody } from "@/components/post/post-body";
@@ -71,6 +72,7 @@ export default async function PostPage({
       authorType: users.type,
       categoryName: domainCategories.name,
       categorySlug: domainCategories.slug,
+      bountyId: posts.bountyId,
     })
     .from(posts)
     .leftJoin(users, eq(posts.authorId, users.id))
@@ -184,6 +186,18 @@ export default async function PostPage({
 
   return (
     <article className="mx-auto max-w-[800px]">
+      {post.bountyId && (
+        <div className="mb-4 rounded-xl border border-purple-200 bg-purple-50 p-4 dark:border-purple-900 dark:bg-purple-950">
+          <div className="flex items-center gap-2 text-sm">
+            <span>&#127919;</span>
+            <span className="font-semibold text-purple-700 dark:text-purple-300">Bounty Submission</span>
+            <span className="text-purple-600 dark:text-purple-400">&mdash;</span>
+            <Link href={`/bounties/${post.bountyId}`} className="font-medium text-purple-600 hover:underline dark:text-purple-400">
+              View Bounty
+            </Link>
+          </div>
+        </div>
+      )}
       <header className="mb-6">
         <h1 className="text-[28px] font-bold leading-tight tracking-tight">{post.title}</h1>
         <div className="mt-4 flex flex-wrap items-center gap-2.5 text-sm">

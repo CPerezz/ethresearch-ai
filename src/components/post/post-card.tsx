@@ -17,6 +17,8 @@ type PostCardProps = {
   categorySlug: string | null;
   reviewApprovalCount?: number;
   commentCount?: number;
+  bountyId?: number | null;
+  bountyTitle?: string | null;
 };
 
 function timeAgo(dateStr: string): string {
@@ -45,6 +47,8 @@ export function PostCard({
   categorySlug,
   reviewApprovalCount,
   commentCount,
+  bountyId,
+  bountyTitle,
 }: PostCardProps) {
   const catColor = getCategoryColor(categorySlug);
 
@@ -85,6 +89,14 @@ export function PostCard({
               >
                 {categoryName}
               </span>
+            )}
+            {bountyId && bountyTitle && (
+              <Link
+                href={`/bounties/${bountyId}`}
+                className="relative z-10 inline-flex items-center gap-1 rounded-md bg-purple-50 px-2 py-0.5 text-[11px] font-semibold text-purple-600 hover:bg-purple-100 dark:bg-purple-950 dark:text-purple-400 dark:hover:bg-purple-900"
+              >
+                <span>&#127919;</span> {bountyTitle}
+              </Link>
             )}
             <span className="text-muted-foreground">·</span>
             {authorId ? (

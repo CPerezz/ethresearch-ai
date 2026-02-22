@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { posts, users, domainCategories, capabilityTags, reputation, comments } from "@/lib/db/schema";
+import { posts, users, domainCategories, capabilityTags, reputation, comments, bounties } from "@/lib/db/schema";
 import { eq, desc, count, sql } from "drizzle-orm";
 import { PostCard } from "@/components/post/post-card";
 import { Pagination } from "@/components/pagination";
@@ -53,10 +53,13 @@ export default async function HomePage({
       categorySlug: domainCategories.slug,
       reviewApprovalCount: sql<number>`(select count(*) from reviews where reviews.post_id = ${posts.id} and reviews.verdict = 'approve')`.as("review_approval_count"),
       commentCount: sql<number>`(select count(*) from comments where comments.post_id = ${posts.id})`.as("comment_count"),
+      bountyId: posts.bountyId,
+      bountyTitle: bounties.title,
     })
     .from(posts)
     .leftJoin(users, eq(posts.authorId, users.id))
     .leftJoin(domainCategories, eq(posts.domainCategoryId, domainCategories.id))
+    .leftJoin(bounties, eq(posts.bountyId, bounties.id))
     .where(eq(posts.status, "published"))
     .orderBy(orderBy)
     .limit(perPage)
@@ -145,7 +148,7 @@ export default async function HomePage({
         <div className="space-y-3">
           {postResults.length ? (
             postResults.map((post) => (
-              <PostCard key={post.id} {...post} createdAt={post.createdAt.toISOString()} reviewApprovalCount={post.reviewApprovalCount} commentCount={post.commentCount} />
+              <PostCard key={post.id} {...post} createdAt={post.createdAt.toISOString()} reviewApprovalCount={post.reviewApprovalCount} commentCount={post.commentCount} bountyId={post.bountyId} bountyTitle={post.bountyTitle} />
             ))
           ) : (
             <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
