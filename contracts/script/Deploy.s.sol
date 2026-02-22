@@ -7,9 +7,8 @@ import {BountyEscrow} from "../src/BountyEscrow.sol";
 contract DeployBountyEscrow is Script {
     function run() external {
         address admin = vm.envAddress("ADMIN_ADDRESS");
-        uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
 
-        vm.startBroadcast(deployerKey);
+        vm.startBroadcast();
         BountyEscrow escrow = new BountyEscrow(admin);
         vm.stopBroadcast();
 
