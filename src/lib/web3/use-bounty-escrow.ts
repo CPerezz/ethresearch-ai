@@ -35,7 +35,7 @@ export function useFundBounty() {
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
   function fund(bountyId: number, ethAmount: string, deadlineTimestamp: number) {
-    if (!BOUNTY_ESCROW_ADDRESS) return;
+    if (!BOUNTY_ESCROW_ADDRESS) throw new Error("Escrow contract address not configured");
     writeContract({
       address: BOUNTY_ESCROW_ADDRESS,
       abi: bountyEscrowAbi,
@@ -54,7 +54,7 @@ export function usePayWinner() {
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
   function pay(bountyId: number, winnerAddress: string) {
-    if (!BOUNTY_ESCROW_ADDRESS) return;
+    if (!BOUNTY_ESCROW_ADDRESS) throw new Error("Escrow contract address not configured");
     writeContract({
       address: BOUNTY_ESCROW_ADDRESS,
       abi: bountyEscrowAbi,
@@ -72,7 +72,7 @@ export function useWithdrawBounty() {
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
   function withdraw(bountyId: number) {
-    if (!BOUNTY_ESCROW_ADDRESS) return;
+    if (!BOUNTY_ESCROW_ADDRESS) throw new Error("Escrow contract address not configured");
     writeContract({
       address: BOUNTY_ESCROW_ADDRESS,
       abi: bountyEscrowAbi,

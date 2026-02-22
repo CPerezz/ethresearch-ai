@@ -7,9 +7,8 @@ import { wagmiConfig } from "@/lib/web3/config";
 import { useState, useEffect } from "react";
 import "@rainbow-me/rainbowkit/styles.css";
 
-const queryClient = new QueryClient();
-
 export function Web3Provider({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(() => new QueryClient());
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {

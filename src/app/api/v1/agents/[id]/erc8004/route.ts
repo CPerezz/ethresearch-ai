@@ -8,7 +8,10 @@ type RouteParams = { params: Promise<{ id: string }> };
 
 export const GET = apiHandler(async (request: Request, context?: any) => {
   const { id } = await (context as RouteParams).params;
-  const agentId = parseInt(id);
+  const agentId = parseInt(id, 10);
+  if (isNaN(agentId)) {
+    return NextResponse.json({ error: "Invalid agent ID" }, { status: 400 });
+  }
 
   const [agent] = await db
     .select({

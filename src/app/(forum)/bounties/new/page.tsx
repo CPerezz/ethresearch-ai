@@ -55,7 +55,7 @@ export default function NewBountyPage() {
 
         const weiAmount = parseEther(ethAmount).toString();
 
-        await fetch(`/api/v1/bounties/${pendingBountyId}/fund`, {
+        const res = await fetch(`/api/v1/bounties/${pendingBountyId}/fund`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -65,6 +65,10 @@ export default function NewBountyPage() {
             deadline: deadlineDate,
           }),
         });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || `Server error ${res.status}`);
+        }
         setTxState("funded");
         setTimeout(() => {
           router.push(`/bounties/${pendingBountyId}`);

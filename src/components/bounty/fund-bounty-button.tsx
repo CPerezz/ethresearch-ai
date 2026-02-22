@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAccount } from "wagmi";
 import { parseEther } from "viem";
 import { useFundBounty } from "@/lib/web3/use-bounty-escrow";
@@ -23,12 +23,16 @@ export function FundBountyButton({ bountyId }: { bountyId: number }) {
   const [isCustom, setIsCustom] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [apiSynced, setApiSynced] = useState(false);
+  const [apiSyncError, setApiSyncError] = useState<string | null>(null);
+
+  // Capture effective days at submission time so the useEffect uses the correct value
+  const effectiveDaysRef = useRef(deadlineDays);
 
   // Sync the tx hash to the API after confirmation
   useEffect(() => {
     if (isSuccess && hash && !apiSynced) {
       const deadlineDate = new Date(
-        Date.now() + deadlineDays * 24 * 60 * 60 * 1000
+        Date.now() + effectiveDaysRef.current * 24 * 60 * 60 * 1000
       );
       fetch(`/api/v1/bounties/${bountyId}/fund`, {
         method: "POST",
@@ -40,12 +44,18 @@ export function FundBountyButton({ bountyId }: { bountyId: number }) {
           deadline: deadlineDate.toISOString(),
         }),
       })
-        .then(() => setApiSynced(true))
-        .catch(() => {
-          // Best effort — the on-chain tx is the source of truth
+        .then((res) => {
+          if (!res.ok) throw new Error(`Server returned ${res.status}`);
+          setApiSynced(true);
+        })
+        .catch((err) => {
+          console.error("Failed to sync funding transaction:", err);
+          setApiSyncError(
+            `Your ETH was sent on-chain (tx: ${hash}), but we failed to record it. Please contact support with your transaction hash.`
+          );
         });
     }
-  }, [isSuccess, hash, apiSynced, bountyId, ethAmount, deadlineDays]);
+  }, [isSuccess, hash, apiSynced, bountyId, ethAmount]);
 
   if (!isConnected) {
     return (
@@ -60,13 +70,18 @@ export function FundBountyButton({ bountyId }: { bountyId: number }) {
 
   if (isSuccess) {
     return (
-      <div className="rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-900 dark:bg-green-950">
-        <p className="text-sm font-medium text-green-700 dark:text-green-400">
-          Bounty funded successfully!
+      <div className={`rounded-xl border p-4 ${apiSyncError ? "border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950" : "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950"}`}>
+        <p className={`text-sm font-medium ${apiSyncError ? "text-amber-700 dark:text-amber-400" : "text-green-700 dark:text-green-400"}`}>
+          {apiSyncError ? "ETH sent, but server sync failed" : "Bounty funded successfully!"}
         </p>
         {hash && (
-          <p className="mt-1 text-xs text-green-600 dark:text-green-500">
+          <p className="mt-1 text-xs text-muted-foreground">
             Tx: {hash.slice(0, 10)}...{hash.slice(-8)}
+          </p>
+        )}
+        {apiSyncError && (
+          <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+            {apiSyncError}
           </p>
         )}
       </div>
@@ -87,6 +102,7 @@ export function FundBountyButton({ bountyId }: { bountyId: number }) {
   function handleFund() {
     const days = isCustom ? parseInt(customDays) : deadlineDays;
     if (!days || days < 1 || days > 90) return;
+    effectiveDaysRef.current = days;
     const deadlineTimestamp = Math.floor(Date.now() / 1000) + days * 86400;
     fund(bountyId, ethAmount, deadlineTimestamp);
   }

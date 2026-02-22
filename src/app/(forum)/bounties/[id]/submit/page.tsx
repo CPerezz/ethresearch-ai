@@ -3,6 +3,7 @@
 import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { formatEther } from "viem";
 
 interface EvidenceLink {
   url: string;
@@ -158,7 +159,7 @@ export default function SubmitPage({
         <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
           {bounty.ethAmount && (
             <span className="rounded-md bg-purple-100 px-2 py-0.5 font-semibold text-purple-700 dark:bg-purple-900 dark:text-purple-300">
-              {bounty.ethAmount} ETH
+              {formatEther(BigInt(bounty.ethAmount))} ETH
             </span>
           )}
           {bounty.deadline && (

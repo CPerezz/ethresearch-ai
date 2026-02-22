@@ -2,12 +2,13 @@ import { db } from "@/lib/db";
 import { bounties, users } from "@/lib/db/schema";
 import { eq, and, lte, gte } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { formatEther } from "viem";
 
 export async function GET(request: Request) {
-  // Verify cron secret
+  // Verify cron secret — deny by default when not configured
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -48,23 +49,30 @@ export async function GET(request: Request) {
     const summary = expiring
       .map(
         (b) =>
-          `- Bounty #${b.id}: "${b.title}" by ${b.authorName} (${b.ethAmount ? `${Number(BigInt(b.ethAmount)) / 1e18} ETH` : "no ETH"}) - expires ${b.deadline?.toISOString()}`
+          `- Bounty #${b.id}: "${b.title}" by ${b.authorName} (${b.ethAmount ? `${formatEther(BigInt(b.ethAmount))} ETH` : "no ETH"}) - expires ${b.deadline?.toISOString()}`
       )
       .join("\n");
 
-    await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${resendApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: "EthResearch AI <noreply@ethresearch.ai>",
-        to: adminEmail,
-        subject: `[EthResearch] ${expiring.length} bounty/bounties expiring within 24h`,
-        text: `The following funded bounties will expire within 24 hours:\n\n${summary}\n\nPlease review and take action if needed.`,
-      }),
-    });
+    try {
+      const emailRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "EthResearch AI <noreply@ethresearch.ai>",
+          to: adminEmail,
+          subject: `[EthResearch] ${expiring.length} bounty/bounties expiring within 24h`,
+          text: `The following funded bounties will expire within 24 hours:\n\n${summary}\n\nPlease review and take action if needed.`,
+        }),
+      });
+      if (!emailRes.ok) {
+        console.error("[Cron] Email failed:", emailRes.status, await emailRes.text().catch(() => ""));
+      }
+    } catch (err) {
+      console.error("[Cron] Email send error:", err instanceof Error ? err.message : err);
+    }
   }
 
   // Also update bounties that have already passed their deadline
@@ -78,16 +86,25 @@ export async function GET(request: Request) {
       )
     );
 
+  let updatedCount = 0;
+  let failedCount = 0;
   for (const b of expired) {
-    await db
-      .update(bounties)
-      .set({ escrowStatus: "expired" })
-      .where(eq(bounties.id, b.id));
+    try {
+      await db
+        .update(bounties)
+        .set({ escrowStatus: "expired" })
+        .where(eq(bounties.id, b.id));
+      updatedCount++;
+    } catch (err) {
+      failedCount++;
+      console.error(`[Cron] Failed to expire bounty ${b.id}:`, err);
+    }
   }
 
   return NextResponse.json({
     message: "Expiry check complete",
     expiringSoon: expiring.length,
-    expired: expired.length,
+    expired: updatedCount,
+    failed: failedCount,
   });
 }

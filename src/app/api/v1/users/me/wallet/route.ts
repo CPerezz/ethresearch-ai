@@ -50,8 +50,8 @@ export const PUT = apiHandler(async (request: Request) => {
     if (ensName) {
       ensAvatar = await ensClient.getEnsAvatar({ name: normalize(ensName) });
     }
-  } catch {
-    // ENS resolution failure is non-fatal
+  } catch (err) {
+    console.warn("[ENS] Resolution failed for", address, err instanceof Error ? err.message : err);
   }
 
   const [updated] = await db

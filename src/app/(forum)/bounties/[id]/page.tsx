@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth/config";
 import { getCategoryColor } from "@/lib/category-colors";
+import { formatEther } from "viem";
 import { PickWinnerButton } from "./pick-winner-button";
 import { EscrowStatusBadge } from "@/components/bounty/escrow-status-badge";
 import { FundBountyButton } from "@/components/bounty/fund-bounty-button";
@@ -144,7 +145,7 @@ export default async function BountyDetailPage({
           </span>
           {bounty.ethAmount && (
             <span className="rounded-md bg-purple-50 px-2 py-0.5 text-[11px] font-semibold text-purple-600 dark:bg-purple-950 dark:text-purple-400">
-              {bounty.ethAmount} ETH
+              {formatEther(BigInt(bounty.ethAmount))} ETH
             </span>
           )}
         </div>

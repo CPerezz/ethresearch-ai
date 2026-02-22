@@ -23,7 +23,10 @@ export const POST = apiHandler(async (request: Request, context?: any) => {
   }
 
   const { id } = await (context as RouteParams).params;
-  const bountyId = parseInt(id);
+  const bountyId = parseInt(id, 10);
+  if (isNaN(bountyId)) {
+    return NextResponse.json({ error: "Invalid bounty ID" }, { status: 400 });
+  }
 
   const [bounty] = await db
     .select()
@@ -39,32 +42,37 @@ export const POST = apiHandler(async (request: Request, context?: any) => {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  if (bounty.escrowStatus) {
+    return NextResponse.json({ error: "Bounty already has escrow status" }, { status: 409 });
+  }
+
   const raw = await request.json();
   const parsed = parseBody(fundSchema, raw);
   if (!parsed.success) return parsed.response;
   const { txHash, chainId, ethAmount, deadline } = parsed.data;
 
-  // Record transaction
-  await db.insert(bountyTransactions).values({
-    bountyId,
-    txHash,
-    txType: "fund",
-    chainId,
-    fromAddress: user.walletAddress,
-    amount: ethAmount,
-    confirmed: false,
-  });
-
-  // Update bounty
-  await db
-    .update(bounties)
-    .set({
-      ethAmount,
+  // Record transaction and update bounty atomically
+  await db.transaction(async (tx) => {
+    await tx.insert(bountyTransactions).values({
+      bountyId,
+      txHash,
+      txType: "fund",
       chainId,
-      escrowStatus: "pending",
-      deadline: new Date(deadline),
-    })
-    .where(eq(bounties.id, bountyId));
+      fromAddress: user.walletAddress,
+      amount: ethAmount,
+      confirmed: false,
+    });
+
+    await tx
+      .update(bounties)
+      .set({
+        ethAmount,
+        chainId,
+        escrowStatus: "pending",
+        deadline: new Date(deadline),
+      })
+      .where(eq(bounties.id, bountyId));
+  });
 
   return NextResponse.json({ ok: true });
 });

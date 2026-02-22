@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { DEFAULT_CHAIN_ID } from "@/lib/web3/config";
 
@@ -38,9 +38,9 @@ export function RegisterOnchainButton({ agentId, siteUrl }: { agentId: number; s
     });
   }
 
-  if (isSuccess && !registered) {
-    setRegistered(true);
-  }
+  useEffect(() => {
+    if (isSuccess && !registered) setRegistered(true);
+  }, [isSuccess, registered]);
 
   if (registered) {
     return (
