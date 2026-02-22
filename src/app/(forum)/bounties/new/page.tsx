@@ -1,11 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useFundBounty } from "@/lib/web3/use-bounty-escrow";
+import { useAccount } from "wagmi";
+import { WalletButton } from "@/components/wallet-button";
+import { parseEther } from "viem";
+import { DEFAULT_CHAIN_ID } from "@/lib/web3/config";
+
+type TxState = "idle" | "submitting" | "confirming" | "recording" | "funded";
 
 export default function NewBountyPage() {
   const router = useRouter();
+  const { address, isConnected } = useAccount();
+  const { fund, hash, isPending, isConfirming, isSuccess, error: txError } = useFundBounty();
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [categorySlug, setCategorySlug] = useState("");
@@ -13,11 +23,78 @@ export default function NewBountyPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // ETH funding state
+  const [ethEnabled, setEthEnabled] = useState(false);
+  const [ethAmount, setEthAmount] = useState("");
+  const [deadlineDays, setDeadlineDays] = useState(14);
+  const [customDays, setCustomDays] = useState("");
+  const [useCustomDays, setUseCustomDays] = useState(false);
+
+  // TX flow state
+  const [txState, setTxState] = useState<TxState>("idle");
+  const [pendingBountyId, setPendingBountyId] = useState<number | null>(null);
+
+  const effectiveDays = useCustomDays ? parseInt(customDays) || 14 : deadlineDays;
+
+  // When tx hash is available, record on backend
+  useEffect(() => {
+    if (hash && pendingBountyId && txState === "submitting") {
+      setTxState("confirming");
+    }
+  }, [hash, pendingBountyId, txState]);
+
+  // When tx is confirmed, record on backend
+  useEffect(() => {
+    async function recordFunding() {
+      if (!isSuccess || !hash || !pendingBountyId || txState !== "confirming") return;
+      setTxState("recording");
+      try {
+        const deadlineDate = new Date(
+          Date.now() + effectiveDays * 24 * 60 * 60 * 1000
+        ).toISOString();
+
+        const weiAmount = parseEther(ethAmount).toString();
+
+        await fetch(`/api/v1/bounties/${pendingBountyId}/fund`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            txHash: hash,
+            chainId: DEFAULT_CHAIN_ID,
+            ethAmount: weiAmount,
+            deadline: deadlineDate,
+          }),
+        });
+        setTxState("funded");
+        setTimeout(() => {
+          router.push(`/bounties/${pendingBountyId}`);
+        }, 1500);
+      } catch {
+        setError("Failed to record funding transaction. Your bounty was created but funding may not be recorded.");
+        setTxState("idle");
+      }
+    }
+    recordFunding();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSuccess]);
+
+  // Handle tx errors
+  useEffect(() => {
+    if (txError) {
+      setError(`Transaction failed: ${txError.message}`);
+      setTxState("idle");
+      setSubmitting(false);
+    }
+  }, [txError]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setSubmitting(true);
+    setTxState("idle");
+
     try {
+      // Step 1: Create bounty via API
       const res = await fetch("/api/v1/bounties", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -26,6 +103,15 @@ export default function NewBountyPage() {
           description,
           ...(categorySlug.trim() ? { domainCategorySlug: categorySlug.trim() } : {}),
           reputationReward,
+          ...(ethEnabled && ethAmount
+            ? {
+                ethAmount: parseEther(ethAmount).toString(),
+                chainId: DEFAULT_CHAIN_ID,
+                deadline: new Date(
+                  Date.now() + effectiveDays * 24 * 60 * 60 * 1000
+                ).toISOString(),
+              }
+            : {}),
         }),
       });
       const data = await res.json();
@@ -37,15 +123,41 @@ export default function NewBountyPage() {
         } else {
           setError(data.error || "Failed to create bounty");
         }
+        setSubmitting(false);
         return;
       }
-      router.push(`/bounties/${data.bounty.id}`);
+
+      const bountyId = data.bounty.id;
+
+      // Step 2: If ETH funding is enabled, submit on-chain tx
+      if (ethEnabled && ethAmount && isConnected) {
+        setPendingBountyId(bountyId);
+        setTxState("submitting");
+        const deadlineTimestamp = Math.floor(
+          (Date.now() + effectiveDays * 24 * 60 * 60 * 1000) / 1000
+        );
+        fund(bountyId, ethAmount, deadlineTimestamp);
+        // The useEffect hooks above handle the rest of the flow
+        return;
+      }
+
+      // No ETH — redirect immediately
+      router.push(`/bounties/${bountyId}`);
     } catch {
       setError("Something went wrong. Please try again.");
-    } finally {
       setSubmitting(false);
     }
   }
+
+  const txStatusMessage = {
+    idle: null,
+    submitting: "Submitting transaction...",
+    confirming: "Confirming on-chain...",
+    recording: "Recording funding...",
+    funded: "Funded!",
+  }[txState];
+
+  const isFormDisabled = submitting || txState !== "idle";
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -74,6 +186,18 @@ export default function NewBountyPage() {
           </div>
         )}
 
+        {txStatusMessage && (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400 flex items-center gap-2">
+            {txState !== "funded" && (
+              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            )}
+            {txStatusMessage}
+          </div>
+        )}
+
         {/* Title */}
         <div>
           <label
@@ -87,10 +211,11 @@ export default function NewBountyPage() {
             type="text"
             required
             maxLength={200}
+            disabled={isFormDisabled}
             placeholder="e.g. What are the tradeoffs of single-slot finality?"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10"
+            className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10 disabled:opacity-50"
           />
           <p className="mt-1 text-xs text-muted-foreground">
             {title.length}/200 characters
@@ -109,10 +234,11 @@ export default function NewBountyPage() {
             id="description"
             required
             maxLength={10000}
+            disabled={isFormDisabled}
             placeholder="Describe the research question in detail. What context is needed? What kind of answer are you looking for?"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10 min-h-[200px]"
+            className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10 min-h-[200px] disabled:opacity-50"
           />
           <p className="mt-1 text-xs text-muted-foreground">
             {description.length}/10000 characters
@@ -132,10 +258,11 @@ export default function NewBountyPage() {
             id="category"
             type="text"
             maxLength={100}
+            disabled={isFormDisabled}
             placeholder="e.g. consensus, cryptography, economics"
             value={categorySlug}
             onChange={(e) => setCategorySlug(e.target.value)}
-            className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10"
+            className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10 disabled:opacity-50"
           />
           <p className="mt-1 text-xs text-muted-foreground">
             Enter a category slug to tag your bounty.
@@ -156,13 +283,135 @@ export default function NewBountyPage() {
             required
             min={5}
             max={100}
+            disabled={isFormDisabled}
             value={reputationReward}
             onChange={(e) => setReputationReward(Number(e.target.value))}
-            className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10"
+            className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10 disabled:opacity-50"
           />
           <p className="mt-1 text-xs text-muted-foreground">
             Reputation points awarded to the winning submission (5-100).
           </p>
+        </div>
+
+        {/* ETH Reward Toggle */}
+        <div className="rounded-xl border border-border p-4 space-y-4">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={ethEnabled}
+              disabled={isFormDisabled}
+              onChange={(e) => setEthEnabled(e.target.checked)}
+              className="h-4 w-4 rounded border-border text-primary focus:ring-primary/20"
+            />
+            <span className="text-sm font-medium text-foreground">
+              Add ETH Reward
+            </span>
+            <span className="text-xs text-muted-foreground">
+              Fund this bounty with ETH via on-chain escrow
+            </span>
+          </label>
+
+          {ethEnabled && (
+            <div className="space-y-4 pl-7">
+              {/* ETH Amount */}
+              <div>
+                <label
+                  htmlFor="ethAmount"
+                  className="mb-1.5 block text-sm font-medium text-foreground"
+                >
+                  ETH Amount
+                </label>
+                <input
+                  id="ethAmount"
+                  type="text"
+                  inputMode="decimal"
+                  disabled={isFormDisabled}
+                  placeholder="0.1"
+                  value={ethAmount}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (/^(\d+\.?\d*)?$/.test(val)) {
+                      setEthAmount(val);
+                    }
+                  }}
+                  className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10 disabled:opacity-50"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Amount in ETH (e.g. 0.1, 0.5, 1.0)
+                </p>
+              </div>
+
+              {/* Deadline */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">
+                  Deadline
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {[7, 14, 30].map((days) => (
+                    <button
+                      key={days}
+                      type="button"
+                      disabled={isFormDisabled}
+                      onClick={() => {
+                        setDeadlineDays(days);
+                        setUseCustomDays(false);
+                      }}
+                      className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                        !useCustomDays && deadlineDays === days
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground hover:text-foreground"
+                      } disabled:opacity-50`}
+                    >
+                      {days} days
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    disabled={isFormDisabled}
+                    onClick={() => setUseCustomDays(true)}
+                    className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                      useCustomDays
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:text-foreground"
+                    } disabled:opacity-50`}
+                  >
+                    Custom
+                  </button>
+                </div>
+                {useCustomDays && (
+                  <input
+                    type="number"
+                    min={1}
+                    max={90}
+                    disabled={isFormDisabled}
+                    placeholder="Number of days (1-90)"
+                    value={customDays}
+                    onChange={(e) => setCustomDays(e.target.value)}
+                    className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10 disabled:opacity-50"
+                  />
+                )}
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Deadline for submissions. Funds can be reclaimed after expiry.
+                </p>
+              </div>
+
+              {/* Wallet connection check */}
+              {!isConnected && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900 dark:bg-amber-950">
+                  <p className="mb-2 text-sm text-amber-700 dark:text-amber-400">
+                    Connect wallet to fund bounty
+                  </p>
+                  <WalletButton />
+                </div>
+              )}
+
+              {isConnected && address && (
+                <p className="text-xs text-muted-foreground">
+                  Connected: {address.slice(0, 6)}...{address.slice(-4)}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Submit */}
@@ -175,10 +424,22 @@ export default function NewBountyPage() {
           </Link>
           <button
             type="submit"
-            disabled={submitting || !title.trim() || !description.trim()}
+            disabled={
+              isFormDisabled ||
+              !title.trim() ||
+              !description.trim() ||
+              (ethEnabled && (!ethAmount || parseFloat(ethAmount) <= 0)) ||
+              (ethEnabled && !isConnected)
+            }
             className="rounded-lg bg-gradient-to-r from-[#636efa] to-[#b066fe] px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {submitting ? "Creating..." : "Create Bounty"}
+            {submitting
+              ? ethEnabled
+                ? "Creating & Funding..."
+                : "Creating..."
+              : ethEnabled
+                ? "Create & Fund Bounty"
+                : "Create Bounty"}
           </button>
         </div>
       </form>

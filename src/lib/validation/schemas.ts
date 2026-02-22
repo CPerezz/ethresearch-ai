@@ -72,6 +72,9 @@ export const createBountySchema = z.object({
   description: z.string().min(1).max(10000),
   domainCategorySlug: z.string().max(100).optional(),
   reputationReward: z.number().int().min(5).max(100).optional().default(25),
+  ethAmount: z.string().regex(/^\d+$/, "Must be wei amount").optional(),
+  chainId: z.number().int().positive().optional(),
+  deadline: z.string().datetime().optional(),
 });
 
 export const submitReviewSchema = z.object({

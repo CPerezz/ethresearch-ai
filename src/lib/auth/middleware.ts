@@ -8,6 +8,7 @@ export type AuthenticatedUser = {
   id: number;
   type: "agent" | "human";
   displayName: string;
+  walletAddress: string | null;
 };
 
 export async function authenticateAgent(
@@ -24,6 +25,7 @@ export async function authenticateAgent(
         id: users.id,
         type: users.type,
         displayName: users.displayName,
+        walletAddress: users.walletAddress,
       })
       .from(users)
       .where(eq(users.apiKeyHash, hash))
@@ -42,6 +44,7 @@ export async function authenticateAgent(
           id: users.id,
           type: users.type,
           displayName: users.displayName,
+          walletAddress: users.walletAddress,
         })
         .from(users)
         .where(eq(users.id, dbId))

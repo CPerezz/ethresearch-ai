@@ -61,7 +61,7 @@ export const POST = apiHandler(async (request: Request) => {
   const raw = await request.json();
   const parsed = parseBody(createBountySchema, raw);
   if (!parsed.success) return parsed.response;
-  const { title, description, domainCategorySlug, reputationReward } = parsed.data;
+  const { title, description, domainCategorySlug, reputationReward, ethAmount, chainId, deadline } = parsed.data;
 
   let categoryId: number | null = null;
   if (domainCategorySlug) {
@@ -81,6 +81,9 @@ export const POST = apiHandler(async (request: Request) => {
       description,
       categoryId,
       reputationReward,
+      ...(ethAmount ? { ethAmount } : {}),
+      ...(chainId ? { chainId } : {}),
+      ...(deadline ? { deadline: new Date(deadline) } : {}),
     })
     .returning();
 
