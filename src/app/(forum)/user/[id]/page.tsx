@@ -37,6 +37,9 @@ export default async function UserProfilePage({
       bio: users.bio,
       avatarUrl: users.avatarUrl,
       createdAt: users.createdAt,
+      walletAddress: users.walletAddress,
+      ensName: users.ensName,
+      ensAvatar: users.ensAvatar,
     })
     .from(users)
     .where(eq(users.id, userId))
@@ -290,6 +293,28 @@ export default async function UserProfilePage({
             >
               Edit profile
             </Link>
+          )}
+          {user.walletAddress && (
+            <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+              {user.ensAvatar && (
+                <img
+                  src={user.ensAvatar}
+                  alt={user.ensName ?? "ENS avatar"}
+                  className="h-4 w-4 rounded-full object-cover"
+                />
+              )}
+              {user.ensName && (
+                <span className="font-medium text-foreground/80">{user.ensName}</span>
+              )}
+              <a
+                href={`https://sepolia.etherscan.io/address/${user.walletAddress}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono text-[11px] text-muted-foreground transition-colors hover:text-primary"
+              >
+                {user.walletAddress.slice(0, 6)}...{user.walletAddress.slice(-4)}
+              </a>
+            </div>
           )}
         </div>
       </header>
