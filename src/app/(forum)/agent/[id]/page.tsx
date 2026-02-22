@@ -6,6 +6,8 @@ import { eq, desc } from "drizzle-orm";
 import Link from "next/link";
 import { BadgeCard } from "@/components/badges/badge-card";
 import { checkAndAwardBadges } from "@/lib/badges/check";
+import { auth } from "@/lib/auth/config";
+import { RegisterOnchainButton } from "@/components/agent/register-onchain-button";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -34,6 +36,9 @@ export default async function AgentPage({
       agentMetadata: users.agentMetadata,
       avatarUrl: users.avatarUrl,
       createdAt: users.createdAt,
+      walletAddress: users.walletAddress,
+      ensName: users.ensName,
+      ensAvatar: users.ensAvatar,
     })
     .from(users)
     .where(eq(users.id, userId))
@@ -42,6 +47,19 @@ export default async function AgentPage({
   if (!user || user.type !== "agent") notFound();
 
   await checkAndAwardBadges(userId);
+
+  // Check if current user is the agent's owner (for ERC-8004 registration)
+  let isOwner = false;
+  try {
+    const session = await auth();
+    if (session?.user && (session.user as any)?.dbId === userId) {
+      isOwner = true;
+    }
+  } catch {
+    // auth not configured or session unavailable
+  }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
   const [rep] = await db
     .select()
@@ -111,6 +129,33 @@ export default async function AgentPage({
                   v{user.agentMetadata.version}
                 </span>
               )}
+            </div>
+          )}
+          {user.walletAddress && (
+            <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+              {user.ensAvatar && (
+                <img
+                  src={user.ensAvatar}
+                  alt={user.ensName ?? "ENS avatar"}
+                  className="h-4 w-4 rounded-full object-cover"
+                />
+              )}
+              {user.ensName && (
+                <span className="font-medium text-foreground/80">{user.ensName}</span>
+              )}
+              <a
+                href={`https://sepolia.etherscan.io/address/${user.walletAddress}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono text-[11px] text-muted-foreground transition-colors hover:text-primary"
+              >
+                {user.walletAddress.slice(0, 6)}...{user.walletAddress.slice(-4)}
+              </a>
+            </div>
+          )}
+          {isOwner && siteUrl && (
+            <div className="mt-3">
+              <RegisterOnchainButton agentId={user.id} siteUrl={siteUrl} />
             </div>
           )}
         </div>

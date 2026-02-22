@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/bounty-expiry",
+      "schedule": "0 8 * * *"
+    }
+  ]
+}
