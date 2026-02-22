@@ -7,6 +7,10 @@ import Link from "next/link";
 import { auth } from "@/lib/auth/config";
 import { getCategoryColor } from "@/lib/category-colors";
 import { PickWinnerButton } from "./pick-winner-button";
+import { EscrowStatusBadge } from "@/components/bounty/escrow-status-badge";
+import { FundBountyButton } from "@/components/bounty/fund-bounty-button";
+import { PayWinnerButton } from "@/components/bounty/pay-winner-button";
+import { WithdrawButton } from "@/components/bounty/withdraw-button";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +59,8 @@ export default async function BountyDetailPage({
       status: bounties.status,
       reputationReward: bounties.reputationReward,
       ethAmount: bounties.ethAmount,
+      escrowStatus: bounties.escrowStatus,
+      deadline: bounties.deadline,
       authorId: bounties.authorId,
       winnerPostId: bounties.winnerPostId,
       createdAt: bounties.createdAt,
@@ -72,7 +78,7 @@ export default async function BountyDetailPage({
 
   if (!bounty) notFound();
 
-  // Fetch submissions (posts linked to this bounty)
+  // Fetch submissions (posts linked to this bounty) with author wallet addresses
   const submissions = await db
     .select({
       id: posts.id,
@@ -82,6 +88,7 @@ export default async function BountyDetailPage({
       authorId: posts.authorId,
       authorName: users.displayName,
       authorType: users.type,
+      authorWallet: users.walletAddress,
     })
     .from(posts)
     .leftJoin(users, eq(posts.authorId, users.id))
@@ -95,6 +102,12 @@ export default async function BountyDetailPage({
   const isOwner = currentUserId === bounty.authorId;
   const canPickWinner = isOwner && bounty.status === "open";
   const catColor = getCategoryColor(bounty.categorySlug);
+
+  // Determine which winner submission has a wallet (for on-chain payout)
+  const winnerSubmission = bounty.winnerPostId
+    ? submissions.find((s) => s.id === bounty.winnerPostId)
+    : null;
+  const winnerWallet = winnerSubmission?.authorWallet ?? null;
 
   return (
     <div className="flex-1 min-w-0">
@@ -162,6 +175,16 @@ export default async function BountyDetailPage({
           <span>{timeAgo(bounty.createdAt)}</span>
         </div>
 
+        {/* On-chain escrow status */}
+        {(bounty.escrowStatus || bounty.ethAmount) && (
+          <div className="mt-3">
+            <EscrowStatusBadge
+              bountyId={bounty.id}
+              dbEscrowStatus={bounty.escrowStatus}
+            />
+          </div>
+        )}
+
         {/* Description */}
         {bounty.description && (
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
@@ -169,6 +192,51 @@ export default async function BountyDetailPage({
           </p>
         )}
       </div>
+
+      {/* Owner actions section */}
+      {isOwner && (
+        <div className="mt-4 space-y-3">
+          {/* Fund button — show if no escrow status yet */}
+          {!bounty.escrowStatus && (
+            <FundBountyButton bountyId={bounty.id} />
+          )}
+
+          {/* Pay winner — show if funded and a winner has been picked with a wallet */}
+          {bounty.escrowStatus === "funded" && winnerWallet && (
+            <div className="rounded-xl border border-border bg-card p-4">
+              <h3 className="mb-2 text-sm font-semibold text-foreground">
+                Pay Winner On-chain
+              </h3>
+              <PayWinnerButton
+                bountyId={bounty.id}
+                winnerAddress={winnerWallet}
+              />
+            </div>
+          )}
+
+          {/* Withdraw — show if expired */}
+          {bounty.escrowStatus === "expired" && (
+            <div className="rounded-xl border border-border bg-card p-4">
+              <WithdrawButton bountyId={bounty.id} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Submit Research — visible to non-owners when bounty is open */}
+      {!isOwner && currentUserId && bounty.status === "open" && (
+        <div className="mt-4">
+          <Link
+            href={`/bounties/${bounty.id}/submit`}
+            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#636efa] to-[#b066fe] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Submit Research
+          </Link>
+        </div>
+      )}
 
       {/* Submissions section */}
       <div className="mt-6">
