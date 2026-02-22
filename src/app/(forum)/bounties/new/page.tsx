@@ -258,23 +258,90 @@ export default function NewBountyPage() {
           </div>
         )}
 
-        {txStatusMessage && (
-          <div className={`rounded-lg border px-4 py-3 text-sm flex items-center gap-2 ${
-            txState === "funded"
-              ? "border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-400"
-              : "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400"
-          }`}>
-            {txState === "funded" ? (
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 6 9 17l-5-5" />
-              </svg>
-            ) : txState !== "idle" ? (
-              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-            ) : null}
-            {txStatusMessage}
+        {/* Full-screen transaction overlay */}
+        {txState !== "idle" && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="mx-4 w-full max-w-sm rounded-2xl border border-border bg-card p-8 shadow-2xl text-center">
+              {/* Ethereum diamond logo */}
+              <div className="mx-auto mb-6 relative h-20 w-20">
+                {txState === "funded" ? (
+                  <div className="flex h-full w-full items-center justify-center rounded-full bg-green-100 dark:bg-green-900/40">
+                    <svg className="h-10 w-10 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                  </div>
+                ) : (
+                  <>
+                    <div className="absolute inset-0 animate-ping rounded-full bg-purple-400/20" />
+                    <div className="absolute inset-2 animate-pulse rounded-full bg-gradient-to-br from-[#636efa]/20 to-[#b066fe]/20" />
+                    <div className="relative flex h-full w-full items-center justify-center">
+                      <svg className="h-12 w-12 animate-[spin_3s_linear_infinite]" viewBox="0 0 784 1277" fill="none">
+                        <path d="M392.07 0L383.5 29.11v873.79l8.57 8.56 392.06-231.75z" fill="#636efa" fillOpacity="0.9" />
+                        <path d="M392.07 0L0 679.71l392.07 231.75V496.26z" fill="#b066fe" fillOpacity="0.9" />
+                        <path d="M392.07 981.29L387.24 987.2v289.41l4.83 14.1L784.13 749.54z" fill="#636efa" fillOpacity="0.9" />
+                        <path d="M392.07 1290.71V981.29L0 749.54z" fill="#b066fe" fillOpacity="0.9" />
+                        <path d="M392.07 911.46l392.06-231.75-392.06-183.45z" fill="#4c5bd4" fillOpacity="0.8" />
+                        <path d="M0 679.71l392.07 231.75V496.26z" fill="#8c52d9" fillOpacity="0.8" />
+                      </svg>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Status text */}
+              <h3 className={`text-lg font-bold ${
+                txState === "funded" ? "text-green-600 dark:text-green-400" : "text-foreground"
+              }`}>
+                {txState === "submitting" && "Waiting for Wallet"}
+                {txState === "confirming" && "Confirming On-chain"}
+                {txState === "recording" && "Recording Transaction"}
+                {txState === "funded" && "Bounty Funded!"}
+              </h3>
+
+              <p className="mt-2 text-sm text-muted-foreground">
+                {txState === "submitting" && "Please confirm the transaction in your wallet..."}
+                {txState === "confirming" && "Transaction submitted. Waiting for block confirmation..."}
+                {txState === "recording" && "Saving transaction details to the server..."}
+                {txState === "funded" && "Your bounty is live with ETH escrow. Redirecting..."}
+              </p>
+
+              {/* Progress steps */}
+              <div className="mt-6 flex items-center justify-center gap-2">
+                {(["submitting", "confirming", "recording", "funded"] as const).map((step, i) => {
+                  const stepOrder = { submitting: 0, confirming: 1, recording: 2, funded: 3 };
+                  const current = stepOrder[txState];
+                  const thisStep = stepOrder[step];
+                  return (
+                    <div key={step} className="flex items-center gap-2">
+                      <div className={`h-2.5 w-2.5 rounded-full transition-colors duration-300 ${
+                        thisStep < current
+                          ? "bg-green-500"
+                          : thisStep === current
+                            ? txState === "funded" ? "bg-green-500" : "bg-purple-500 animate-pulse"
+                            : "bg-muted"
+                      }`} />
+                      {i < 3 && (
+                        <div className={`h-0.5 w-6 transition-colors duration-300 ${
+                          thisStep < current ? "bg-green-500" : "bg-muted"
+                        }`} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Tx hash link */}
+              {hash && (
+                <a
+                  href={`https://sepolia.etherscan.io/tx/${hash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 inline-block text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  View on Etherscan &rarr;
+                </a>
+              )}
+            </div>
           </div>
         )}
 
