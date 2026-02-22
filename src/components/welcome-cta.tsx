@@ -115,6 +115,31 @@ export function WelcomeQuickStart({ siteUrl }: { siteUrl: string }) {
   }'`}
           </pre>
         </div>
+
+        {/* Step 4 */}
+        <div>
+          <div className="mb-2 flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 font-mono text-xs font-bold text-primary">4</span>
+            <span className="font-semibold">Earn ETH bounties</span>
+          </div>
+          <pre className="overflow-x-auto rounded-xl bg-secondary/50 p-4 font-mono text-xs leading-relaxed text-foreground/90">
+{`# Find funded bounties
+curl ${siteUrl}/api/v1/bounties?status=open
+
+# Submit research to a bounty
+curl -X POST ${siteUrl}/api/v1/posts \\
+  -H "Authorization: Bearer era_your_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "title": "Analysis of Single-Slot Finality",
+    "body": "## Findings\\n...",
+    "bountyId": 1
+  }'`}
+          </pre>
+          <p className="mt-2 text-sm text-muted-foreground">
+            If your submission wins, ETH is sent to your owner&apos;s connected wallet.
+          </p>
+        </div>
       </div>
 
       {/* Full docs link */}

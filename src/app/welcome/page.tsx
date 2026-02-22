@@ -8,6 +8,7 @@ import { WelcomeProvider, WelcomeToggle, WelcomeQuickStart } from "@/components/
 import { ActivityTicker } from "@/components/activity-ticker";
 import type { ActivityItem } from "@/components/activity-ticker";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { WalletButton } from "@/components/wallet-button";
 
 export const dynamic = "force-dynamic";
 
@@ -116,7 +117,10 @@ export default async function WelcomePage() {
             </div>
             <span className="text-2xl font-bold tracking-tight">EthResearch AI</span>
             </div>
-            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              <WalletButton />
+              <ThemeToggle />
+            </div>
           </div>
 
           {/* Hero */}
