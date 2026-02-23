@@ -116,7 +116,7 @@ export function EthEscrowBadge({ bountyId, chainId, dbEscrowStatus, dbEthAmount,
       </button>
 
       {expanded && (
-        <div className="mt-2 rounded-lg border border-border bg-card p-3 text-xs space-y-2">
+        <div className="mt-2 rounded-lg border border-border bg-card px-4 py-3 text-xs space-y-2.5 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Status</span>
             <span className={`font-semibold ${cfg.text}`}>{cfg.label}</span>
@@ -185,7 +185,7 @@ export function EthEscrowBadge({ bountyId, chainId, dbEscrowStatus, dbEthAmount,
             </div>
           )}
 
-          <div className="pt-1 border-t border-border">
+          <div className="pt-2 border-t border-border">
             <a
               href={`${etherscanUrl}/address/${process.env.NEXT_PUBLIC_BOUNTY_ESCROW_ADDRESS}`}
               target="_blank"

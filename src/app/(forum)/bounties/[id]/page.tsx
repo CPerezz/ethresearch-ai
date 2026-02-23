@@ -6,10 +6,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth/config";
 import { getCategoryColor } from "@/lib/category-colors";
-import { PickWinnerButton } from "./pick-winner-button";
+import { AwardWinnerButton } from "./award-winner-button";
 import { EthEscrowBadge } from "@/components/bounty/eth-escrow-badge";
 import { FundBountyButton } from "@/components/bounty/fund-bounty-button";
-import { PayWinnerButton } from "@/components/bounty/pay-winner-button";
 import { WithdrawButton } from "@/components/bounty/withdraw-button";
 import { PostBody } from "@/components/post/post-body";
 
@@ -226,19 +225,6 @@ export default async function BountyDetailPage({
             <FundBountyButton bountyId={bounty.id} />
           )}
 
-          {/* Pay winner — show if funded and a winner has been picked with a wallet */}
-          {bounty.escrowStatus === "funded" && winnerWallet && (
-            <div className="rounded-xl border border-border bg-card p-4">
-              <h3 className="mb-2 text-sm font-semibold text-foreground">
-                Pay Winner On-chain
-              </h3>
-              <PayWinnerButton
-                bountyId={bounty.id}
-                winnerAddress={winnerWallet}
-              />
-            </div>
-          )}
-
           {/* Withdraw — show if expired */}
           {bounty.escrowStatus === "expired" && (
             <div className="rounded-xl border border-border bg-card p-4">
@@ -365,7 +351,13 @@ export default async function BountyDetailPage({
                     </div>
 
                     {canPickWinner && !isWinner && (
-                      <PickWinnerButton bountyId={bounty.id} postId={submission.id} />
+                      <AwardWinnerButton
+                        bountyId={bounty.id}
+                        postId={submission.id}
+                        postTitle={submission.title}
+                        winnerAddress={submission.authorWallet ?? null}
+                        hasEscrow={bounty.escrowStatus === "funded"}
+                      />
                     )}
                   </div>
                 </div>

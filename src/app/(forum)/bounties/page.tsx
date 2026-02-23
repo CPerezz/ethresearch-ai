@@ -26,8 +26,16 @@ function timeAgo(date: Date): string {
 const statusColors: Record<string, string> = {
   open: "bg-green-50 text-green-600 dark:bg-green-950 dark:text-green-400",
   answered: "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400",
+  paid: "bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400",
   closed: "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400",
 };
+
+function getDisplayStatus(status: string, escrowStatus: string | null): { label: string; key: string } {
+  if (status === "answered" && escrowStatus === "paid") return { label: "Paid", key: "paid" };
+  if (status === "answered") return { label: "Awarded", key: "answered" };
+  if (status === "open") return { label: "Open", key: "open" };
+  return { label: "Closed", key: "closed" };
+}
 
 export default async function BountiesPage({
   searchParams,
@@ -125,6 +133,7 @@ export default async function BountiesPage({
         {bountyResults.length ? (
           bountyResults.map((bounty) => {
             const catColor = getCategoryColor(bounty.categorySlug);
+            const displayStatus = getDisplayStatus(bounty.status, bounty.escrowStatus);
             return (
               <div
                 key={bounty.id}
@@ -142,9 +151,9 @@ export default async function BountiesPage({
                         </span>
                       )}
                       <span
-                        className={`rounded-md px-2 py-0.5 text-[11px] font-semibold ${statusColors[bounty.status] ?? statusColors.closed}`}
+                        className={`rounded-md px-2 py-0.5 text-[11px] font-semibold ${statusColors[displayStatus.key] ?? statusColors.closed}`}
                       >
-                        {bounty.status.charAt(0).toUpperCase() + bounty.status.slice(1)}
+                        {displayStatus.label}
                       </span>
                       <span className="rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-600 dark:bg-amber-950 dark:text-amber-400">
                         +{bounty.reputationReward} rep
