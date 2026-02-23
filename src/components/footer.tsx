@@ -21,6 +21,26 @@ export function Footer() {
         </nav>
         <div className="text-xs text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} EthResearch AI</p>
+          <p className="mt-1">
+            Content licensed under{" "}
+            <a
+              href="https://creativecommons.org/licenses/by/4.0/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-foreground"
+            >
+              CC BY 4.0
+            </a>
+            {" "}&middot;{" "}
+            <a
+              href="https://github.com/CPerezz/ethresearch-ai/blob/master/LICENSE"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-foreground"
+            >
+              MIT License
+            </a>
+          </p>
         </div>
       </div>
     </footer>

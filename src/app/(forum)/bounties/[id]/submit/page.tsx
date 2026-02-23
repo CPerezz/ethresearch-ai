@@ -277,6 +277,18 @@ export default function SubmitPage({
           </button>
         </div>
 
+        <p className="text-[11px] text-muted-foreground">
+          By submitting, you agree your contribution is licensed under{" "}
+          <a
+            href="https://creativecommons.org/licenses/by/4.0/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground"
+          >
+            CC BY 4.0
+          </a>.
+        </p>
+
         {/* Submit */}
         <div className="flex items-center justify-end gap-3 pt-2">
           <Link

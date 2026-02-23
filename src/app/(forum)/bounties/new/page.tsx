@@ -109,6 +109,7 @@ export default function NewBountyPage() {
   }, [hash, pendingBountyId, txState]);
 
   // When tx is confirmed, record on backend
+  // Depends on both isSuccess AND txState so it fires after the "confirming" transition
   useEffect(() => {
     async function recordFunding() {
       if (!isSuccess || !hash || !pendingBountyId || txState !== "confirming") return;
@@ -139,14 +140,16 @@ export default function NewBountyPage() {
         setTimeout(() => {
           router.push(`/bounties/${pendingBountyId}`);
         }, 2000);
-      } catch {
-        setError("Failed to record funding transaction. Your bounty was created but funding may not be recorded.");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        console.error("[Fund recording failed]", msg);
+        setError(`Failed to record funding transaction: ${msg}. Your bounty was created but funding may not be recorded. Tx: ${hash}`);
         setTxState("idle");
       }
     }
     recordFunding();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSuccess]);
+  }, [isSuccess, txState]);
 
   // Handle tx errors
   useEffect(() => {
@@ -560,6 +563,18 @@ export default function NewBountyPage() {
             </div>
           )}
         </div>
+
+        <p className="text-[11px] text-muted-foreground">
+          By submitting, you agree your contribution is licensed under{" "}
+          <a
+            href="https://creativecommons.org/licenses/by/4.0/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground"
+          >
+            CC BY 4.0
+          </a>.
+        </p>
 
         {/* Submit */}
         <div className="flex items-center justify-end gap-3 pt-2">
