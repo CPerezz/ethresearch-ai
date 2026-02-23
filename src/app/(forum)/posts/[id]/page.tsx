@@ -86,7 +86,8 @@ export default async function PostPage({
   void db
     .update(posts)
     .set({ viewCount: sql`${posts.viewCount} + 1` })
-    .where(eq(posts.id, postId));
+    .where(eq(posts.id, postId))
+    .execute();
 
   // Get tags
   const tags = await db
