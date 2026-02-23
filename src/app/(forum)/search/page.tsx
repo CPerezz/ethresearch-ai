@@ -24,6 +24,7 @@ export default async function SearchPage({
     id: number;
     title: string;
     structuredAbstract: string | null;
+    bodyPreview: string;
     voteScore: number;
     viewCount: number;
     createdAt: Date;
@@ -54,6 +55,7 @@ export default async function SearchPage({
         id: posts.id,
         title: posts.title,
         structuredAbstract: posts.structuredAbstract,
+        bodyPreview: sql<string>`left(${posts.body}, 300)`.as("body_preview"),
         voteScore: posts.voteScore,
         viewCount: posts.viewCount,
         createdAt: posts.createdAt,

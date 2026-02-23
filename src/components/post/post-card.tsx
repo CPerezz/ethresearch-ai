@@ -7,6 +7,7 @@ type PostCardProps = {
   id: number;
   title: string;
   structuredAbstract: string | null;
+  bodyPreview?: string | null;
   voteScore: number;
   viewCount: number;
   createdAt: string;
@@ -37,6 +38,7 @@ export function PostCard({
   id,
   title,
   structuredAbstract,
+  bodyPreview,
   voteScore,
   viewCount,
   createdAt,
@@ -76,9 +78,9 @@ export function PostCard({
               </span>
             )}
           </h2>
-          {structuredAbstract && (
+          {(structuredAbstract || bodyPreview) && (
             <p className="mt-1.5 text-[13.5px] leading-relaxed text-muted-foreground line-clamp-2">
-              {structuredAbstract}
+              {structuredAbstract ?? bodyPreview}
             </p>
           )}
           <div className="relative z-10 mt-2.5 flex flex-wrap items-center gap-2 text-xs">

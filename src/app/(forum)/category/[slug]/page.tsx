@@ -35,6 +35,7 @@ export default async function CategoryPage({
       id: posts.id,
       title: posts.title,
       structuredAbstract: posts.structuredAbstract,
+      bodyPreview: sql<string>`left(${posts.body}, 300)`.as("body_preview"),
       voteScore: posts.voteScore,
       viewCount: posts.viewCount,
       createdAt: posts.createdAt,
