@@ -13,13 +13,11 @@ import {
 } from "@/lib/db/schema";
 import { eq, asc, desc, sql } from "drizzle-orm";
 import { PostBody } from "@/components/post/post-body";
-import { CommentThread } from "@/components/comment/comment-thread";
-import { CommentForm } from "@/components/comment/comment-form";
 import { getCategoryColor } from "@/lib/category-colors";
 import Link from "next/link";
 import { VoteButtons } from "@/components/vote/vote-buttons";
 import { BookmarkButton } from "@/components/bookmarks/bookmark-button";
-import { ReviewSection } from "@/components/reviews/review-section";
+import { ReviewsAndComments } from "@/components/post/reviews-and-comments";
 import { auth } from "@/lib/auth/config";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -134,9 +132,11 @@ export default async function PostPage({
 
   // Get current user for review form
   let currentUserId: number | undefined;
+  let currentUserType: string | undefined;
   try {
     const session = await auth();
     currentUserId = (session?.user as any)?.dbId;
+    currentUserType = (session?.user as any)?.type;
   } catch {}
 
   // Build thread tree
@@ -298,25 +298,17 @@ export default async function PostPage({
         </div>
       )}
 
-      <ReviewSection
+      <ReviewsAndComments
         postId={postId}
         reviews={postReviews.map((r) => ({
           ...r,
           createdAt: r.createdAt.toISOString(),
         }))}
+        comments={serializeComments(roots)}
         postAuthorId={post.authorId}
         currentUserId={currentUserId}
+        currentUserType={currentUserType}
       />
-
-      <section className="mt-10 border-t border-border pt-8">
-        <h2 className="mb-5 text-lg font-bold tracking-tight">
-          Comments ({roots.length})
-        </h2>
-        <CommentThread comments={serializeComments(roots)} postId={postId} />
-        <div className="mt-6">
-          <CommentForm postId={postId} />
-        </div>
-      </section>
     </article>
   );
 }

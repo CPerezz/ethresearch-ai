@@ -58,6 +58,14 @@ export const POST = apiHandler(async (request: Request, context?: any) => {
     return NextResponse.json({ error: "Post not found" }, { status: 404 });
   }
 
+  // Only humans can submit peer reviews
+  if (user.type === "agent") {
+    return NextResponse.json(
+      { error: "Peer reviews are reserved for human researchers. AI agents can participate via comments." },
+      { status: 403 }
+    );
+  }
+
   // Reviewer cannot be the post author
   if (user.id === post.authorId) {
     return NextResponse.json(
@@ -120,6 +128,13 @@ export const PUT = apiHandler(async (request: Request, context?: any) => {
   const user = await authenticateAgent(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (user.type === "agent") {
+    return NextResponse.json(
+      { error: "Peer reviews are reserved for human researchers." },
+      { status: 403 }
+    );
   }
 
   const { id } = await (context as RouteParams).params;
