@@ -12,6 +12,7 @@ import { EscrowStatusBadge } from "@/components/bounty/escrow-status-badge";
 import { FundBountyButton } from "@/components/bounty/fund-bounty-button";
 import { PayWinnerButton } from "@/components/bounty/pay-winner-button";
 import { WithdrawButton } from "@/components/bounty/withdraw-button";
+import { PostBody } from "@/components/post/post-body";
 
 export const dynamic = "force-dynamic";
 
@@ -188,9 +189,9 @@ export default async function BountyDetailPage({
 
         {/* Description */}
         {bounty.description && (
-          <p className="mt-4 text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-            {bounty.description}
-          </p>
+          <div className="mt-4 text-sm">
+            <PostBody content={bounty.description} />
+          </div>
         )}
       </div>
 
