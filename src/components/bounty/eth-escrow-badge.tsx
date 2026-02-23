@@ -89,7 +89,7 @@ export function EthEscrowBadge({ bountyId, chainId, dbEscrowStatus, dbEthAmount,
   const payTx = transactions.find((t) => t.txType === "payout");
 
   return (
-    <div className="inline-block">
+    <div className="inline-flex items-start gap-2">
       <button
         onClick={() => setExpanded(!expanded)}
         className="inline-flex items-center gap-1.5 rounded-md bg-purple-50 px-2.5 py-1 text-[11px] font-semibold text-purple-700 transition-colors hover:bg-purple-100 dark:bg-purple-950 dark:text-purple-300 dark:hover:bg-purple-900"
@@ -103,7 +103,7 @@ export function EthEscrowBadge({ bountyId, chainId, dbEscrowStatus, dbEthAmount,
         <span className="text-purple-500 dark:text-purple-400">&middot;</span>
         {cfg.label}
         <svg
-          className={`h-3 w-3 text-purple-400 transition-transform ${expanded ? "rotate-180" : ""}`}
+          className={`h-3 w-3 text-purple-400 transition-transform ${expanded ? "-rotate-90" : ""}`}
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -111,26 +111,26 @@ export function EthEscrowBadge({ bountyId, chainId, dbEscrowStatus, dbEthAmount,
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          <path d="m6 9 6 6 6-6" />
+          <path d="m9 6 6 6-6 6" />
         </svg>
       </button>
 
       {expanded && (
-        <div className="mt-2 rounded-lg border border-border bg-card px-4 py-3 text-xs space-y-2.5 shadow-sm">
-          <div className="flex items-center justify-between">
+        <div className="min-w-[260px] rounded-lg border border-border bg-card px-4 py-3 text-xs space-y-2.5 shadow-sm">
+          <div className="flex items-center justify-between gap-6">
             <span className="text-muted-foreground">Status</span>
             <span className={`font-semibold ${cfg.text}`}>{cfg.label}</span>
           </div>
 
           {deadline && deadline > BigInt(0) && status === "funded" && (
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-6">
               <span className="text-muted-foreground">Deadline</span>
               <span className="font-medium text-foreground">{deadlineCountdown(deadline)}</span>
             </div>
           )}
 
           {funder && (
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-6">
               <span className="text-muted-foreground">Funder</span>
               <a
                 href={`${etherscanUrl}/address/${funder}`}
@@ -144,7 +144,7 @@ export function EthEscrowBadge({ bountyId, chainId, dbEscrowStatus, dbEthAmount,
           )}
 
           {winner && (
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-6">
               <span className="text-muted-foreground">Winner</span>
               <a
                 href={`${etherscanUrl}/address/${winner}`}
@@ -158,8 +158,8 @@ export function EthEscrowBadge({ bountyId, chainId, dbEscrowStatus, dbEthAmount,
           )}
 
           {fundTx && (
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Fund tx</span>
+            <div className="flex items-center justify-between gap-6">
+              <span className="shrink-0 text-muted-foreground">Fund tx</span>
               <a
                 href={`${etherscanUrl}/tx/${fundTx.txHash}`}
                 target="_blank"
@@ -172,8 +172,8 @@ export function EthEscrowBadge({ bountyId, chainId, dbEscrowStatus, dbEthAmount,
           )}
 
           {payTx && (
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Payout tx</span>
+            <div className="flex items-center justify-between gap-6">
+              <span className="shrink-0 text-muted-foreground">Payout tx</span>
               <a
                 href={`${etherscanUrl}/tx/${payTx.txHash}`}
                 target="_blank"
