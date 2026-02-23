@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
-import { bounties, posts, users, domainCategories, reviews } from "@/lib/db/schema";
+import { bounties, posts, users, domainCategories, reviews, bountyTransactions } from "@/lib/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth/config";
 import { getCategoryColor } from "@/lib/category-colors";
-import { formatEther } from "viem";
 import { PickWinnerButton } from "./pick-winner-button";
-import { EscrowStatusBadge } from "@/components/bounty/escrow-status-badge";
+import { EthEscrowBadge } from "@/components/bounty/eth-escrow-badge";
 import { FundBountyButton } from "@/components/bounty/fund-bounty-button";
 import { PayWinnerButton } from "@/components/bounty/pay-winner-button";
 import { WithdrawButton } from "@/components/bounty/withdraw-button";
@@ -62,6 +61,7 @@ export default async function BountyDetailPage({
       reputationReward: bounties.reputationReward,
       ethAmount: bounties.ethAmount,
       escrowStatus: bounties.escrowStatus,
+      chainId: bounties.chainId,
       deadline: bounties.deadline,
       authorId: bounties.authorId,
       winnerPostId: bounties.winnerPostId,
@@ -111,6 +111,17 @@ export default async function BountyDetailPage({
       return b.rankScore - a.rankScore;
     });
 
+  const txs = await db
+    .select({
+      txHash: bountyTransactions.txHash,
+      txType: bountyTransactions.txType,
+      fromAddress: bountyTransactions.fromAddress,
+      toAddress: bountyTransactions.toAddress,
+      amount: bountyTransactions.amount,
+    })
+    .from(bountyTransactions)
+    .where(eq(bountyTransactions.bountyId, bountyId));
+
   // Get current user
   const session = await auth();
   const currentUserId = (session?.user as any)?.dbId as number | undefined;
@@ -158,11 +169,6 @@ export default async function BountyDetailPage({
           <span className="rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-600 dark:bg-amber-950 dark:text-amber-400">
             +{bounty.reputationReward} rep
           </span>
-          {bounty.ethAmount && (
-            <span className="rounded-md bg-purple-50 px-2 py-0.5 text-[11px] font-semibold text-purple-600 dark:bg-purple-950 dark:text-purple-400">
-              {formatEther(BigInt(bounty.ethAmount))} ETH
-            </span>
-          )}
         </div>
 
         {/* Title */}
@@ -194,9 +200,12 @@ export default async function BountyDetailPage({
         {/* On-chain escrow status */}
         {(bounty.escrowStatus || bounty.ethAmount) && (
           <div className="mt-3">
-            <EscrowStatusBadge
+            <EthEscrowBadge
               bountyId={bounty.id}
+              chainId={bounty.chainId}
               dbEscrowStatus={bounty.escrowStatus}
+              dbEthAmount={bounty.ethAmount}
+              transactions={txs}
             />
           </div>
         )}
