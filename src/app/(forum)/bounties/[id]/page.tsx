@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
-import { bounties, posts, users, domainCategories } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { bounties, posts, users, domainCategories, reviews } from "@/lib/db/schema";
+import { eq, desc, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth/config";
@@ -91,11 +91,25 @@ export default async function BountyDetailPage({
       authorName: users.displayName,
       authorType: users.type,
       authorWallet: users.walletAddress,
+      approvals: sql<number>`(SELECT COUNT(*) FROM reviews WHERE reviews.post_id = ${posts.id} AND reviews.verdict = 'approve')`.as("approvals"),
+      rejections: sql<number>`(SELECT COUNT(*) FROM reviews WHERE reviews.post_id = ${posts.id} AND reviews.verdict = 'reject')`.as("rejections"),
+      needsRevision: sql<number>`(SELECT COUNT(*) FROM reviews WHERE reviews.post_id = ${posts.id} AND reviews.verdict = 'needs_revision')`.as("needs_revision"),
     })
     .from(posts)
     .leftJoin(users, eq(posts.authorId, users.id))
-    .where(eq(posts.bountyId, bountyId))
-    .orderBy(desc(posts.voteScore));
+    .where(eq(posts.bountyId, bountyId));
+
+  // Compute ranking score: votes 40%, reviews 60%
+  // reviewScore = (approvals * 2) - (rejections * 3)
+  const rankedSubmissions = submissions
+    .map((s) => {
+      const reviewScore = (Number(s.approvals) * 2) - (Number(s.rejections) * 3);
+      const rankScore = (0.4 * s.voteScore) + (0.6 * reviewScore);
+      return { ...s, reviewScore, rankScore };
+    })
+    .sort((a, b) => {
+      return b.rankScore - a.rankScore;
+    });
 
   // Get current user
   const session = await auth();
@@ -244,14 +258,20 @@ export default async function BountyDetailPage({
       <div className="mt-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-foreground">
-            Submissions ({submissions.length})
+            Submissions ({rankedSubmissions.length})
           </h2>
         </div>
 
-        {submissions.length > 0 ? (
+        {rankedSubmissions.length > 0 ? (
           <div className="space-y-3">
-            {submissions.map((submission) => {
+            {[...rankedSubmissions].sort((a, b) => {
+              if (bounty.winnerPostId === a.id) return -1;
+              if (bounty.winnerPostId === b.id) return 1;
+              return b.rankScore - a.rankScore;
+            }).map((submission, index) => {
               const isWinner = bounty.winnerPostId === submission.id;
+              const rank = index + 1;
+              const totalReviews = Number(submission.approvals) + Number(submission.rejections) + Number(submission.needsRevision);
               return (
                 <div
                   key={submission.id}
@@ -261,7 +281,18 @@ export default async function BountyDetailPage({
                       : "border-border"
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    {/* Rank number */}
+                    <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-sm font-bold ${
+                      isWinner
+                        ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                        : rank <= 3
+                          ? "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
+                          : "bg-muted text-muted-foreground"
+                    }`}>
+                      {isWinner ? "★" : `#${rank}`}
+                    </div>
+
                     <div className="min-w-0 flex-1">
                       <div className="mb-1 flex flex-wrap items-center gap-2">
                         {isWinner && (
@@ -271,6 +302,28 @@ export default async function BountyDetailPage({
                         )}
                         <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
                           {submission.voteScore} vote{submission.voteScore !== 1 ? "s" : ""}
+                        </span>
+                        {totalReviews > 0 && (
+                          <>
+                            {Number(submission.approvals) > 0 && (
+                              <span className="rounded-md bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-600 dark:bg-green-950 dark:text-green-400">
+                                {submission.approvals} approved
+                              </span>
+                            )}
+                            {Number(submission.needsRevision) > 0 && (
+                              <span className="rounded-md bg-yellow-50 px-2 py-0.5 text-[11px] font-semibold text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400">
+                                {submission.needsRevision} needs revision
+                              </span>
+                            )}
+                            {Number(submission.rejections) > 0 && (
+                              <span className="rounded-md bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600 dark:bg-red-950 dark:text-red-400">
+                                {submission.rejections} rejected
+                              </span>
+                            )}
+                          </>
+                        )}
+                        <span className="text-[10px] text-muted-foreground">
+                          score: {submission.rankScore.toFixed(1)}
                         </span>
                       </div>
 
