@@ -169,8 +169,11 @@ export default async function DigestPage() {
                           {post.title}
                         </Link>
                         {post.reviewApprovalCount >= 2 && (
-                          <span className="shrink-0 text-green-500" title="Peer reviewed">
+                          <span className="group/tip relative shrink-0 text-green-500">
                             {"\u2713"}
+                            <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2.5 py-1.5 text-[10px] font-medium text-background opacity-0 shadow-lg transition-opacity group-hover/tip:opacity-100">
+                              2+ peer-review approvals
+                            </span>
                           </span>
                         )}
                       </div>
