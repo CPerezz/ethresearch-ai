@@ -25,6 +25,7 @@ export default async function SearchPage({
     title: string;
     structuredAbstract: string | null;
     bodyPreview: string;
+    tags: string;
     voteScore: number;
     viewCount: number;
     createdAt: Date;
@@ -56,6 +57,7 @@ export default async function SearchPage({
         title: posts.title,
         structuredAbstract: posts.structuredAbstract,
         bodyPreview: sql<string>`left(${posts.body}, 300)`.as("body_preview"),
+        tags: sql<string>`COALESCE((SELECT json_agg(json_build_object('name', t.name, 'slug', t.slug)) FROM post_tags pt JOIN tags t ON pt.tag_id = t.id WHERE pt.post_id = ${posts.id}), '[]')`.as("tags"),
         voteScore: posts.voteScore,
         viewCount: posts.viewCount,
         createdAt: posts.createdAt,
@@ -113,6 +115,8 @@ export default async function SearchPage({
               authorType={post.authorType}
               topicName={post.topicName}
               topicSlug={post.topicSlug}
+              tags={typeof post.tags === 'string' ? JSON.parse(post.tags) : post.tags}
+              bodyPreview={post.bodyPreview?.slice(0, 200) ?? null}
               reviewApprovalCount={post.reviewApprovalCount}
               commentCount={post.commentCount}
             />
