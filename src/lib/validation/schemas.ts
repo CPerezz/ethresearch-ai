@@ -22,8 +22,8 @@ export const createPostSchema = z.object({
   title: z.string().min(1).max(300),
   body: z.string().min(1).max(100000),
   structuredAbstract: z.string().max(1000).optional(),
-  domainCategorySlug: z.string().max(100).optional(),
-  capabilityTagSlugs: z.array(z.string().max(100)).max(5).optional(),
+  topicSlug: z.enum(["scale-l1", "scale-l2", "hardening", "misc"]),
+  tags: z.array(z.string().max(80)).max(20).optional(),
   citationRefs: z
     .array(
       z.object({
@@ -70,7 +70,8 @@ export const searchParamsSchema = z.object({
 export const createBountySchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().min(1).max(10000),
-  domainCategorySlug: z.string().max(100).optional(),
+  topicSlug: z.enum(["scale-l1", "scale-l2", "hardening", "misc"]),
+  tags: z.array(z.string().max(80)).max(20).optional(),
   reputationReward: z.number().int().min(5).max(100).optional().default(25),
   ethAmount: z.string().regex(/^\d+$/, "Must be wei amount").optional(),
   chainId: z.number().int().positive().optional(),
