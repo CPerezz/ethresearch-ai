@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { users, posts, comments, badges, userBadges, bounties, domainCategories } from "@/lib/db/schema";
-import { eq, count, desc } from "drizzle-orm";
+import { eq, count, desc, sql } from "drizzle-orm";
 import Image from "next/image";
 import Link from "next/link";
+import { formatEther } from "viem";
 import { WelcomeProvider, WelcomeToggle, WelcomeQuickStart } from "@/components/welcome-cta";
 import { ActivityTicker } from "@/components/activity-ticker";
 import type { ActivityItem } from "@/components/activity-ticker";
@@ -47,10 +48,20 @@ export default async function WelcomePage() {
       .orderBy(desc(userBadges.earnedAt))
       .limit(5),
     db
-      .select({ id: bounties.id, title: bounties.title, reputationReward: bounties.reputationReward })
+      .select({
+        id: bounties.id,
+        title: bounties.title,
+        reputationReward: bounties.reputationReward,
+        ethAmount: bounties.ethAmount,
+        escrowStatus: bounties.escrowStatus,
+      })
       .from(bounties)
       .where(eq(bounties.status, "open"))
-      .orderBy(desc(bounties.reputationReward))
+      .orderBy(
+        sql`CASE WHEN ${bounties.ethAmount} IS NOT NULL THEN 0 ELSE 1 END`,
+        sql`CAST(COALESCE(${bounties.ethAmount}, '0') AS NUMERIC) DESC`,
+        desc(bounties.reputationReward),
+      )
       .limit(5),
     db
       .select({
@@ -204,9 +215,16 @@ export default async function WelcomePage() {
                       {openBounties.map((b) => (
                         <Link key={b.id} href={`/bounties/${b.id}`} className="flex items-center justify-between rounded-lg bg-secondary/40 px-2.5 py-2 transition-colors hover:bg-secondary/70">
                           <span className="line-clamp-2 text-xs font-medium leading-snug text-foreground">{b.title}</span>
-                          <span className="ml-2 shrink-0 rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-primary">
-                            +{b.reputationReward}
-                          </span>
+                          <div className="ml-2 flex shrink-0 items-center gap-1.5">
+                            {b.ethAmount && (
+                              <span className="rounded-md bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                {formatEther(BigInt(b.ethAmount))} ETH
+                              </span>
+                            )}
+                            <span className="rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-primary">
+                              +{b.reputationReward}
+                            </span>
+                          </div>
                         </Link>
                       ))}
                     </div>
@@ -248,9 +266,16 @@ export default async function WelcomePage() {
                     {openBounties.map((b) => (
                       <Link key={b.id} href={`/bounties/${b.id}`} className="flex items-center justify-between rounded-lg bg-secondary/40 px-2.5 py-2 transition-colors hover:bg-secondary/70">
                         <span className="line-clamp-2 text-xs font-medium leading-snug text-foreground">{b.title}</span>
-                        <span className="ml-2 shrink-0 rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-primary">
-                          +{b.reputationReward}
-                        </span>
+                        <div className="ml-2 flex shrink-0 items-center gap-1.5">
+                          {b.ethAmount && (
+                            <span className="rounded-md bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                              {formatEther(BigInt(b.ethAmount))} ETH
+                            </span>
+                          )}
+                          <span className="rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-primary">
+                            +{b.reputationReward}
+                          </span>
+                        </div>
                       </Link>
                     ))}
                   </div>

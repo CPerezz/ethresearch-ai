@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
-import { bounties, users, domainCategories, posts } from "@/lib/db/schema";
-import { eq, desc, count, sql } from "drizzle-orm";
+import { bounties, users, domainCategories } from "@/lib/db/schema";
+import { eq, desc, count, sql, and, isNotNull, isNull, gte } from "drizzle-orm";
 import Link from "next/link";
 import { getCategoryColor } from "@/lib/category-colors";
 import { Pagination } from "@/components/pagination";
-import { formatEther } from "viem";
+import { BountyFilters } from "@/components/bounty/bounty-filters";
+import { formatEther, parseEther } from "viem";
 
 export const dynamic = "force-dynamic";
 
@@ -25,68 +26,106 @@ function timeAgo(date: Date): string {
 
 const statusColors: Record<string, string> = {
   open: "bg-green-50 text-green-600 dark:bg-green-950 dark:text-green-400",
-  answered: "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400",
   paid: "bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400",
-  closed: "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400",
 };
-
-function getDisplayStatus(status: string, escrowStatus: string | null): { label: string; key: string } {
-  if (status === "answered" && escrowStatus === "paid") return { label: "Paid", key: "paid" };
-  if (status === "answered") return { label: "Awarded", key: "answered" };
-  if (status === "open") return { label: "Open", key: "open" };
-  return { label: "Closed", key: "closed" };
-}
 
 export default async function BountiesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; page?: string }>;
+  searchParams: Promise<{ status?: string; page?: string; type?: string; minEth?: string; category?: string }>;
 }) {
   const params = await searchParams;
-  const status = ["open", "answered", "all"].includes(params.status ?? "")
-    ? (params.status as "open" | "answered" | "all")
-    : "open";
+  const status = params.status === "paid" ? "paid" : "open";
+  const type = ["eth", "rep"].includes(params.type ?? "") ? (params.type as "eth" | "rep") : "all";
+  const minEthParam = params.minEth ?? "";
+  const categorySlug = params.category ?? "all";
   const page = Math.max(1, parseInt(params.page ?? "1"));
   const perPage = 20;
   const offset = (page - 1) * perPage;
 
-  const conditions = status !== "all" ? eq(bounties.status, status as "open" | "answered") : undefined;
+  // Build WHERE conditions
+  const whereConditions = [];
 
-  const [totalResult] = await db
-    .select({ count: count() })
-    .from(bounties)
-    .where(conditions);
+  if (status === "open") {
+    whereConditions.push(eq(bounties.status, "open"));
+  } else {
+    // "paid" tab: answered bounties where escrow was paid
+    whereConditions.push(eq(bounties.status, "answered"));
+    whereConditions.push(eq(bounties.escrowStatus, "paid"));
+  }
+
+  if (type === "eth") {
+    whereConditions.push(isNotNull(bounties.ethAmount));
+  } else if (type === "rep") {
+    whereConditions.push(isNull(bounties.ethAmount));
+  }
+
+  if (minEthParam) {
+    const minEthFloat = parseFloat(minEthParam);
+    if (!isNaN(minEthFloat) && minEthFloat > 0) {
+      const minWei = parseEther(minEthParam).toString();
+      whereConditions.push(
+        sql`CAST(COALESCE(${bounties.ethAmount}, '0') AS NUMERIC) >= ${minWei}::NUMERIC`,
+      );
+    }
+  }
+
+  if (categorySlug !== "all") {
+    whereConditions.push(eq(domainCategories.slug, categorySlug));
+  }
+
+  const conditions = whereConditions.length > 0 ? and(...whereConditions) : undefined;
+
+  // Fetch categories for filters + count + bounty results in parallel
+  const [allCategories, [totalResult], bountyResults] = await Promise.all([
+    db.select({ slug: domainCategories.slug, name: domainCategories.name }).from(domainCategories).orderBy(domainCategories.name),
+    db
+      .select({ count: count() })
+      .from(bounties)
+      .leftJoin(domainCategories, eq(bounties.categoryId, domainCategories.id))
+      .where(conditions),
+    db
+      .select({
+        id: bounties.id,
+        title: bounties.title,
+        description: bounties.description,
+        status: bounties.status,
+        reputationReward: bounties.reputationReward,
+        ethAmount: bounties.ethAmount,
+        escrowStatus: bounties.escrowStatus,
+        deadline: bounties.deadline,
+        createdAt: bounties.createdAt,
+        authorName: users.displayName,
+        categoryName: domainCategories.name,
+        categorySlug: domainCategories.slug,
+        submissionCount: sql<number>`(select count(*) from posts where posts.bounty_id = ${bounties.id})`.as("submission_count"),
+      })
+      .from(bounties)
+      .leftJoin(users, eq(bounties.authorId, users.id))
+      .leftJoin(domainCategories, eq(bounties.categoryId, domainCategories.id))
+      .where(conditions)
+      .orderBy(
+        sql`CASE WHEN ${bounties.ethAmount} IS NOT NULL THEN 0 ELSE 1 END`,
+        sql`CAST(COALESCE(${bounties.ethAmount}, '0') AS NUMERIC) DESC`,
+        desc(bounties.reputationReward),
+      )
+      .limit(perPage)
+      .offset(offset),
+  ]);
+
   const totalCount = totalResult.count;
-
-  const bountyResults = await db
-    .select({
-      id: bounties.id,
-      title: bounties.title,
-      description: bounties.description,
-      status: bounties.status,
-      reputationReward: bounties.reputationReward,
-      ethAmount: bounties.ethAmount,
-      escrowStatus: bounties.escrowStatus,
-      deadline: bounties.deadline,
-      createdAt: bounties.createdAt,
-      authorName: users.displayName,
-      categoryName: domainCategories.name,
-      categorySlug: domainCategories.slug,
-      submissionCount: sql<number>`(select count(*) from posts where posts.bounty_id = ${bounties.id})`.as("submission_count"),
-    })
-    .from(bounties)
-    .leftJoin(users, eq(bounties.authorId, users.id))
-    .leftJoin(domainCategories, eq(bounties.categoryId, domainCategories.id))
-    .where(conditions)
-    .orderBy(desc(bounties.createdAt))
-    .limit(perPage)
-    .offset(offset);
 
   const tabs = [
     { label: "Open", value: "open" },
-    { label: "Answered", value: "answered" },
-    { label: "All", value: "all" },
+    { label: "Paid", value: "paid" },
   ] as const;
+
+  // Build searchParams for pagination (preserve all filters)
+  const paginationParams: Record<string, string> = {};
+  if (status !== "open") paginationParams.status = status;
+  if (type !== "all") paginationParams.type = type;
+  if (minEthParam) paginationParams.minEth = minEthParam;
+  if (categorySlug !== "all") paginationParams.category = categorySlug;
 
   return (
     <div className="flex-1 min-w-0">
@@ -111,8 +150,8 @@ export default async function BountiesPage({
         </p>
       </div>
 
-      {/* Status filter tabs */}
-      <div className="mb-5 flex gap-1 rounded-lg bg-secondary p-0.5 w-fit">
+      {/* Status tabs */}
+      <div className="mb-4 flex gap-1 rounded-lg bg-secondary p-0.5 w-fit">
         {tabs.map((tab) => (
           <a
             key={tab.value}
@@ -128,12 +167,14 @@ export default async function BountiesPage({
         ))}
       </div>
 
+      {/* Filters */}
+      <BountyFilters categories={allCategories} />
+
       {/* Bounty cards */}
       <div className="space-y-3">
         {bountyResults.length ? (
           bountyResults.map((bounty) => {
             const catColor = getCategoryColor(bounty.categorySlug);
-            const displayStatus = getDisplayStatus(bounty.status, bounty.escrowStatus);
             return (
               <div
                 key={bounty.id}
@@ -151,9 +192,11 @@ export default async function BountiesPage({
                         </span>
                       )}
                       <span
-                        className={`rounded-md px-2 py-0.5 text-[11px] font-semibold ${statusColors[displayStatus.key] ?? statusColors.closed}`}
+                        className={`rounded-md px-2 py-0.5 text-[11px] font-semibold ${
+                          status === "paid" ? statusColors.paid : statusColors.open
+                        }`}
                       >
-                        {displayStatus.label}
+                        {status === "paid" ? "Paid" : "Open"}
                       </span>
                       <span className="rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-600 dark:bg-amber-950 dark:text-amber-400">
                         +{bounty.reputationReward} rep
@@ -219,7 +262,7 @@ export default async function BountiesPage({
         totalItems={totalCount}
         perPage={perPage}
         baseUrl="/bounties"
-        searchParams={{ status }}
+        searchParams={paginationParams}
       />
     </div>
   );
