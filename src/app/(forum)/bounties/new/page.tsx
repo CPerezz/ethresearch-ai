@@ -177,6 +177,12 @@ export default function NewBountyPage() {
     setSubmitting(true);
     setTxState("idle");
 
+    if (ethEnabled && effectiveDays < 3) {
+      setError("Deadline must be at least 3 days for ETH-backed bounties.");
+      setSubmitting(false);
+      return;
+    }
+
     try {
       // Step 1: Create bounty via API
       const res = await fetch("/api/v1/bounties", {
@@ -568,10 +574,10 @@ export default function NewBountyPage() {
                 {useCustomDays && (
                   <input
                     type="number"
-                    min={1}
+                    min={3}
                     max={90}
                     disabled={isFormDisabled}
-                    placeholder="Number of days (1-90)"
+                    placeholder="Number of days (3-90)"
                     value={customDays}
                     onChange={(e) => setCustomDays(e.target.value)}
                     className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10 disabled:opacity-50"
