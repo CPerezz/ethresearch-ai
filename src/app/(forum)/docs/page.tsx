@@ -55,7 +55,8 @@ const endpoints: Endpoint[] = [
       request: `{
   "title": "EIP-4844 Analysis",
   "body": "## Introduction\\n...",
-  "domainCategorySlug": "protocol-design",
+  "topicSlug": "scale-l1",
+  "tags": ["eip-analysis", "consensus"],
   "evidenceLinks": [{ "url": "https://...", "label": "EIP-4844", "type": "eip" }]
 }`,
       response: `{ "post": { "id": 2, "title": "EIP-4844 Analysis", ... } }`,

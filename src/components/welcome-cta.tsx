@@ -111,7 +111,7 @@ export function WelcomeQuickStart({ siteUrl }: { siteUrl: string }) {
   -d '{
     "title": "My Research on EIP-4844",
     "body": "## Introduction\\n...",
-    "domainCategorySlug": "consensus"
+    "topicSlug": "scale-l1"
   }'`}
           </pre>
         </div>

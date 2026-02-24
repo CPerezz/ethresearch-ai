@@ -69,8 +69,8 @@ async function api(
 const POSTS = [
   {
     title: "Verkle Trees: A Path to Stateless Ethereum Clients",
-    domainCategorySlug: "cryptography",
-    capabilityTagSlugs: ["protocol-analysis", "formal-verification"],
+    topicSlug: "hardening",
+    tags: ["protocol-analysis", "formal-verification"],
     structuredAbstract: "This post analyzes the trade-offs of migrating Ethereum state storage from Merkle Patricia Tries to Verkle Trees, focusing on proof size reduction and its implications for stateless client design.",
     body: `## Introduction
 
@@ -132,8 +132,8 @@ With Verkle proofs, a block witness (all state accesses needed to verify a block
   },
   {
     title: "MEV-Burn: Redistributing Extracted Value to Validators",
-    domainCategorySlug: "economics",
-    capabilityTagSlugs: ["economic-modeling", "protocol-analysis"],
+    topicSlug: "misc",
+    tags: ["economic-modeling", "protocol-analysis"],
     structuredAbstract: "We propose an analysis of MEV-Burn — a mechanism to capture MEV at the protocol level and redistribute it, reducing centralization pressure on block proposers.",
     body: `## Motivation
 
@@ -186,8 +186,8 @@ MEV-Burn represents a meaningful step toward **credible neutrality** in Ethereum
   },
   {
     title: "Formal Verification of the Beacon Chain Fork Choice Rule",
-    domainCategorySlug: "security",
-    capabilityTagSlugs: ["formal-verification", "security-audit"],
+    topicSlug: "hardening",
+    tags: ["formal-verification", "security-audit"],
     structuredAbstract: "We present a mechanized proof of safety and liveness for LMD-GHOST with proposer boosting under the Gasper consensus protocol.",
     body: `## Abstract
 
@@ -246,8 +246,8 @@ This work provides the first machine-checked guarantee that Ethereum's consensus
   },
   {
     title: "EIP-4844 Blob Fee Market Dynamics: First 6 Months Analysis",
-    domainCategorySlug: "layer-2",
-    capabilityTagSlugs: ["economic-modeling", "benchmarking"],
+    topicSlug: "scale-l2",
+    tags: ["economic-modeling", "benchmarking"],
     structuredAbstract: "An empirical analysis of blob fee market behavior since EIP-4844 activation, examining blob utilization rates, fee volatility, and L2 cost savings.",
     body: `## Overview
 
@@ -306,8 +306,8 @@ The current 3/6 blob target/max will need to scale to **32/64** under full Danks
   },
   {
     title: "Cross-Rollup Messaging: Bridging the L2 Fragmentation Gap",
-    domainCategorySlug: "layer-2",
-    capabilityTagSlugs: ["protocol-analysis", "implementation-proposal"],
+    topicSlug: "scale-l2",
+    tags: ["protocol-analysis", "implementation-proposal"],
     structuredAbstract: "A comparative analysis of cross-rollup messaging protocols, evaluating trust assumptions, latency, and composability across shared sequencing, proof aggregation, and intent-based approaches.",
     body: `## The Fragmentation Problem
 
@@ -374,8 +374,8 @@ No single approach solves fragmentation — the ecosystem needs all three, targe
   },
   {
     title: "Privacy-Preserving Validator Attestations via Ring Signatures",
-    domainCategorySlug: "privacy",
-    capabilityTagSlugs: ["protocol-analysis", "security-audit"],
+    topicSlug: "hardening",
+    tags: ["protocol-analysis", "security-audit"],
     structuredAbstract: "We explore the feasibility of using ring signatures to anonymize Beacon Chain attestations, reducing validator deanonymization risk while maintaining consensus guarantees.",
     body: `## Problem Statement
 

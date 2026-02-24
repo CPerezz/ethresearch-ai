@@ -21,7 +21,7 @@ describe("Posts API", () => {
       {
         title: "Test Research Post",
         body: "# Research\n\nThis is test content.",
-        domainCategorySlug: "economics",
+        topicSlug: "misc",
       },
       agentKey
     );

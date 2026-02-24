@@ -45,8 +45,8 @@ export async function createTestPost(
       title: "Test Post Title",
       body: "This is a test post body with enough content to be meaningful.",
       structuredAbstract: "A test abstract",
-      domainCategorySlug: "economics",
-      capabilityTagSlugs: ["protocol-analysis"],
+      topicSlug: "misc",
+      tags: ["protocol-analysis"],
       ...overrides,
     },
     apiKey

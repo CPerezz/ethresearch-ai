@@ -4,26 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-const CATEGORIES = [
-  { slug: "consensus", name: "Consensus" },
-  { slug: "cryptography", name: "Cryptography" },
-  { slug: "economics", name: "Economics" },
-  { slug: "execution", name: "Execution" },
-  { slug: "security", name: "Security" },
-  { slug: "mev", name: "MEV" },
-  { slug: "layer2", name: "Layer 2" },
-  { slug: "governance", name: "Governance" },
-];
-
-const TAGS = [
-  "formal-verification",
-  "zk-proofs",
-  "game-theory",
-  "mechanism-design",
-  "data-analysis",
-  "simulation",
-  "literature-review",
-  "protocol-design",
+const TOPICS = [
+  { slug: "scale-l1", name: "Scale L1" },
+  { slug: "scale-l2", name: "Scale L2" },
+  { slug: "hardening", name: "Hardening" },
+  { slug: "misc", name: "Misc" },
 ];
 
 interface EvidenceLink {
@@ -35,19 +20,13 @@ interface EvidenceLink {
 export default function NewPostPage() {
   const router = useRouter();
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [topicSlug, setTopicSlug] = useState("");
+  const [tagsInput, setTagsInput] = useState("");
   const [structuredAbstract, setStructuredAbstract] = useState("");
   const [body, setBody] = useState("");
   const [evidenceLinks, setEvidenceLinks] = useState<EvidenceLink[]>([]);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-
-  function toggleTag(tag: string) {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : prev.length < 5 ? [...prev, tag] : prev
-    );
-  }
 
   function addEvidenceLink() {
     setEvidenceLinks((prev) => [...prev, { url: "", label: "", type: "webpage" }]);
@@ -73,8 +52,8 @@ export default function NewPostPage() {
           title,
           body,
           ...(structuredAbstract.trim() ? { structuredAbstract: structuredAbstract.trim() } : {}),
-          ...(category ? { domainCategorySlug: category } : {}),
-          ...(selectedTags.length ? { capabilityTagSlugs: selectedTags } : {}),
+          topicSlug: topicSlug || "misc",
+          ...(tagsInput.trim() ? { tags: tagsInput.split(",").map(t => t.trim()).filter(Boolean) } : {}),
           ...(evidenceLinks.filter((l) => l.url.trim() && l.label.trim()).length
             ? { evidenceLinks: evidenceLinks.filter((l) => l.url.trim() && l.label.trim()) }
             : {}),
@@ -134,21 +113,22 @@ export default function NewPostPage() {
           <p className="mt-1 text-xs text-muted-foreground">{title.length}/300 characters</p>
         </div>
 
-        {/* Category */}
+        {/* Topic */}
         <div>
-          <label htmlFor="category" className="mb-1.5 block text-sm font-medium text-foreground">
-            Category <span className="font-normal text-muted-foreground">(optional)</span>
+          <label htmlFor="topic" className="mb-1.5 block text-sm font-medium text-foreground">
+            Topic
           </label>
           <select
-            id="category"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            id="topic"
+            required
+            value={topicSlug}
+            onChange={(e) => setTopicSlug(e.target.value)}
             className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10"
           >
-            <option value="">Select a category</option>
-            {CATEGORIES.map((cat) => (
-              <option key={cat.slug} value={cat.slug}>
-                {cat.name}
+            <option value="">Select a topic</option>
+            {TOPICS.map((t) => (
+              <option key={t.slug} value={t.slug}>
+                {t.name}
               </option>
             ))}
           </select>
@@ -156,25 +136,18 @@ export default function NewPostPage() {
 
         {/* Tags */}
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-foreground">
-            Tags <span className="font-normal text-muted-foreground">(up to 5)</span>
+          <label htmlFor="tags" className="mb-1.5 block text-sm font-medium text-foreground">
+            Tags <span className="font-normal text-muted-foreground">(optional)</span>
           </label>
-          <div className="flex flex-wrap gap-1.5">
-            {TAGS.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => toggleTag(tag)}
-                className={
-                  selectedTags.includes(tag)
-                    ? "rounded-md border border-primary bg-primary/10 px-2.5 py-1 font-mono text-xs font-semibold text-primary"
-                    : "rounded-md border border-border px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
-                }
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
+          <input
+            id="tags"
+            type="text"
+            value={tagsInput}
+            onChange={(e) => setTagsInput(e.target.value)}
+            placeholder="e.g. consensus, evm, rollups"
+            className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10"
+          />
+          <p className="mt-1 text-xs text-muted-foreground">Comma-separated. Helps others discover your post.</p>
         </div>
 
         {/* Structured Abstract */}
