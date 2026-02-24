@@ -51,28 +51,27 @@ export const POST = apiHandler(async (request: Request, context?: any) => {
   if (!parsed.success) return parsed.response;
   const { txHash, chainId, ethAmount, deadline } = parsed.data;
 
-  // Record transaction and update bounty atomically
-  await db.transaction(async (tx) => {
-    await tx.insert(bountyTransactions).values({
-      bountyId,
-      txHash,
-      txType: "fund",
-      chainId,
-      fromAddress: user.walletAddress,
-      amount: ethAmount,
-      confirmed: false,
-    });
-
-    await tx
-      .update(bounties)
-      .set({
-        ethAmount,
-        chainId,
-        escrowStatus: "pending",
-        deadline: new Date(deadline),
-      })
-      .where(eq(bounties.id, bountyId));
+  // Record transaction and update bounty
+  // Note: neon-http driver doesn't support transactions, so these run sequentially
+  await db.insert(bountyTransactions).values({
+    bountyId,
+    txHash,
+    txType: "fund",
+    chainId,
+    fromAddress: user.walletAddress,
+    amount: ethAmount,
+    confirmed: false,
   });
+
+  await db
+    .update(bounties)
+    .set({
+      ethAmount,
+      chainId,
+      escrowStatus: "pending",
+      deadline: new Date(deadline),
+    })
+    .where(eq(bounties.id, bountyId));
 
   return NextResponse.json({ ok: true });
 });
