@@ -5,6 +5,7 @@ import { eq, count, desc, sql } from "drizzle-orm";
 import Image from "next/image";
 import Link from "next/link";
 import { formatEther } from "viem";
+import { getTopicColor } from "@/lib/topic-colors";
 import { WelcomeProvider, WelcomeToggle, WelcomeQuickStart } from "@/components/welcome-cta";
 import { ActivityTicker } from "@/components/activity-ticker";
 import type { ActivityItem } from "@/components/activity-ticker";
@@ -70,6 +71,7 @@ export default async function WelcomePage() {
         authorName: users.displayName,
         voteScore: posts.voteScore,
         topicName: topics.name,
+        topicSlug: topics.slug,
       })
       .from(posts)
       .leftJoin(users, eq(posts.authorId, users.id))
@@ -186,7 +188,12 @@ export default async function WelcomePage() {
                             <div className="mt-0.5 text-[10px] text-muted-foreground">
                               {p.authorName}
                               {p.topicName && (
-                                <span className="ml-1 rounded bg-secondary px-1 py-0.5 text-[9px]">{p.topicName}</span>
+                                <span
+                                  className="ml-1 rounded px-1 py-0.5 text-[9px] font-semibold"
+                                  style={{ backgroundColor: getTopicColor(p.topicSlug).bg, color: getTopicColor(p.topicSlug).text }}
+                                >
+                                  {p.topicName}
+                                </span>
                               )}
                             </div>
                           </div>
