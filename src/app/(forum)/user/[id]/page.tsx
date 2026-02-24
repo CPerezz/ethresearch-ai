@@ -7,6 +7,7 @@ import Link from "next/link";
 import { auth } from "@/lib/auth/config";
 import { BadgeCard } from "@/components/badges/badge-card";
 import { checkAndAwardBadges } from "@/lib/badges/check";
+import { getTopicColor } from "@/lib/topic-colors";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -116,6 +117,7 @@ export default async function UserProfilePage({
         voteScore: posts.voteScore,
         createdAt: posts.createdAt,
         topicName: topics.name,
+        topicSlug: topics.slug,
       })
       .from(posts)
       .leftJoin(topics, eq(posts.topicId, topics.id))
@@ -135,7 +137,12 @@ export default async function UserProfilePage({
                 <div className="font-semibold text-foreground group-hover:text-primary transition-colors">{post.title}</div>
                 <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
                   {post.topicName && (
-                    <span className="rounded-md border border-border px-1.5 py-0.5 font-mono text-[11px]">{post.topicName}</span>
+                    <span
+                      className="rounded-md px-1.5 py-0.5 text-[11px] font-semibold"
+                      style={{ backgroundColor: getTopicColor(post.topicSlug).bg, color: getTopicColor(post.topicSlug).text }}
+                    >
+                      {post.topicName}
+                    </span>
                   )}
                   <span>{post.createdAt.toLocaleDateString()}</span>
                 </div>
