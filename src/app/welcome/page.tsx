@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
-import { users, posts, comments, badges, userBadges, bounties, domainCategories } from "@/lib/db/schema";
+import { users, posts, comments, badges, userBadges, bounties, topics } from "@/lib/db/schema";
 import { eq, count, desc, sql } from "drizzle-orm";
 import Image from "next/image";
 import Link from "next/link";
@@ -69,11 +69,11 @@ export default async function WelcomePage() {
         title: posts.title,
         authorName: users.displayName,
         voteScore: posts.voteScore,
-        categoryName: domainCategories.name,
+        topicName: topics.name,
       })
       .from(posts)
       .leftJoin(users, eq(posts.authorId, users.id))
-      .leftJoin(domainCategories, eq(posts.domainCategoryId, domainCategories.id))
+      .leftJoin(topics, eq(posts.topicId, topics.id))
       .where(eq(posts.status, "published"))
       .orderBy(desc(posts.voteScore))
       .limit(5),
@@ -185,8 +185,8 @@ export default async function WelcomePage() {
                             <div className="line-clamp-2 text-xs font-medium leading-snug text-foreground">{p.title}</div>
                             <div className="mt-0.5 text-[10px] text-muted-foreground">
                               {p.authorName}
-                              {p.categoryName && (
-                                <span className="ml-1 rounded bg-secondary px-1 py-0.5 text-[9px]">{p.categoryName}</span>
+                              {p.topicName && (
+                                <span className="ml-1 rounded bg-secondary px-1 py-0.5 text-[9px]">{p.topicName}</span>
                               )}
                             </div>
                           </div>

@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
-import { bounties, posts, users, domainCategories, reviews, bountyTransactions } from "@/lib/db/schema";
+import { bounties, posts, users, topics, reviews, bountyTransactions } from "@/lib/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth/config";
-import { getCategoryColor } from "@/lib/category-colors";
+import { getTopicColor } from "@/lib/topic-colors";
 import { AwardWinnerButton } from "./award-winner-button";
 import { EthEscrowBadge } from "@/components/bounty/eth-escrow-badge";
 import { FundBountyButton } from "@/components/bounty/fund-bounty-button";
@@ -50,7 +50,7 @@ export default async function BountyDetailPage({
   const bountyId = parseInt(id);
   if (isNaN(bountyId)) notFound();
 
-  // Fetch bounty with author and category info
+  // Fetch bounty with author and topic info
   const [bounty] = await db
     .select({
       id: bounties.id,
@@ -68,12 +68,12 @@ export default async function BountyDetailPage({
       closedAt: bounties.closedAt,
       authorName: users.displayName,
       authorType: users.type,
-      categoryName: domainCategories.name,
-      categorySlug: domainCategories.slug,
+      topicName: topics.name,
+      topicSlug: topics.slug,
     })
     .from(bounties)
     .leftJoin(users, eq(bounties.authorId, users.id))
-    .leftJoin(domainCategories, eq(bounties.categoryId, domainCategories.id))
+    .leftJoin(topics, eq(bounties.topicId, topics.id))
     .where(eq(bounties.id, bountyId))
     .limit(1);
 
@@ -127,7 +127,7 @@ export default async function BountyDetailPage({
 
   const isOwner = currentUserId === bounty.authorId;
   const canPickWinner = isOwner && bounty.status === "open";
-  const catColor = getCategoryColor(bounty.categorySlug);
+  const topicColor = getTopicColor(bounty.topicSlug);
 
   // Determine which winner submission has a wallet (for on-chain payout)
   const winnerSubmission = bounty.winnerPostId
@@ -152,12 +152,12 @@ export default async function BountyDetailPage({
       <div className="rounded-xl border border-border bg-card p-6">
         {/* Badges row */}
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          {bounty.categoryName && (
+          {bounty.topicName && (
             <span
               className="rounded-md px-2 py-0.5 text-[11px] font-semibold"
-              style={{ backgroundColor: catColor.bg, color: catColor.text }}
+              style={{ backgroundColor: topicColor.bg, color: topicColor.text }}
             >
-              {bounty.categoryName}
+              {bounty.topicName}
             </span>
           )}
           <span

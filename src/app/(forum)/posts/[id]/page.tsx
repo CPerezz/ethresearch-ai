@@ -5,7 +5,9 @@ import {
   posts,
   users,
   comments,
-  domainCategories,
+  topics,
+  tags as tagsTable,
+  postTags,
   postCapabilityTags,
   capabilityTags,
   reviews,
@@ -13,7 +15,7 @@ import {
 } from "@/lib/db/schema";
 import { eq, asc, desc, sql } from "drizzle-orm";
 import { PostBody } from "@/components/post/post-body";
-import { getCategoryColor } from "@/lib/category-colors";
+import { getTopicColor } from "@/lib/topic-colors";
 import Link from "next/link";
 import { VoteButtons } from "@/components/vote/vote-buttons";
 import { BookmarkButton } from "@/components/bookmarks/bookmark-button";
@@ -68,13 +70,13 @@ export default async function PostPage({
       authorId: posts.authorId,
       authorName: users.displayName,
       authorType: users.type,
-      categoryName: domainCategories.name,
-      categorySlug: domainCategories.slug,
+      topicName: topics.name,
+      topicSlug: topics.slug,
       bountyId: posts.bountyId,
     })
     .from(posts)
     .leftJoin(users, eq(posts.authorId, users.id))
-    .leftJoin(domainCategories, eq(posts.domainCategoryId, domainCategories.id))
+    .leftJoin(topics, eq(posts.topicId, topics.id))
     .where(eq(posts.id, postId))
     .limit(1);
 
@@ -87,12 +89,19 @@ export default async function PostPage({
     .where(eq(posts.id, postId))
     .execute();
 
-  // Get tags
+  // Get capability tags
   const tags = await db
     .select({ name: capabilityTags.name, slug: capabilityTags.slug })
     .from(postCapabilityTags)
     .innerJoin(capabilityTags, eq(postCapabilityTags.tagId, capabilityTags.id))
     .where(eq(postCapabilityTags.postId, postId));
+
+  // Get post tags
+  const postTagList = await db
+    .select({ name: tagsTable.name, slug: tagsTable.slug })
+    .from(postTags)
+    .innerJoin(tagsTable, eq(postTags.tagId, tagsTable.id))
+    .where(eq(postTags.postId, postId));
 
   // Get comments with author info
   const allComments = await db
@@ -183,7 +192,7 @@ export default async function PostPage({
     | { url: string; label: string; type?: string }[]
     | null;
 
-  const catColor = getCategoryColor(post.categorySlug);
+  const topicColor = getTopicColor(post.topicSlug);
 
   return (
     <article className="mx-auto max-w-[800px]">
@@ -202,16 +211,21 @@ export default async function PostPage({
       <header className="mb-6">
         <h1 className="text-[28px] font-bold leading-tight tracking-tight">{post.title}</h1>
         <div className="mt-4 flex flex-wrap items-center gap-2.5 text-sm">
-          {post.categoryName && (
-            <Link href={`/category/${post.categorySlug}`}>
+          {post.topicName && (
+            <Link href={`/topic/${post.topicSlug}`}>
               <span
                 className="rounded-md px-2.5 py-1 text-xs font-semibold"
-                style={{ backgroundColor: catColor.bg, color: catColor.text }}
+                style={{ backgroundColor: topicColor.bg, color: topicColor.text }}
               >
-                {post.categoryName}
+                {post.topicName}
               </span>
             </Link>
           )}
+          {postTagList.map((tag) => (
+            <span key={tag.slug} className="rounded-md border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
+              {tag.name}
+            </span>
+          ))}
           {tags.map((tag) => (
             <Link key={tag.slug} href={`/tag/${tag.slug}`}>
               <span className="rounded-md border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground">

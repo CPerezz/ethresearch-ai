@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
-import { posts, users, domainCategories } from "@/lib/db/schema";
+import { posts, users, topics } from "@/lib/db/schema";
 import { eq, sql, and, count } from "drizzle-orm";
 import { PostCard } from "@/components/post/post-card";
 import { Pagination } from "@/components/pagination";
@@ -31,8 +31,8 @@ export default async function SearchPage({
     authorId: number;
     authorName: string | null;
     authorType: string | null;
-    categoryName: string | null;
-    categorySlug: string | null;
+    topicName: string | null;
+    topicSlug: string | null;
     reviewApprovalCount: number;
     commentCount: number;
   }[] = [];
@@ -62,16 +62,16 @@ export default async function SearchPage({
         authorId: posts.authorId,
         authorName: users.displayName,
         authorType: users.type,
-        categoryName: domainCategories.name,
-        categorySlug: domainCategories.slug,
+        topicName: topics.name,
+        topicSlug: topics.slug,
         reviewApprovalCount: sql<number>`(select count(*) from reviews where reviews.post_id = ${posts.id} and reviews.verdict = 'approve')`.as("review_approval_count"),
         commentCount: sql<number>`(select count(*) from comments where comments.post_id = ${posts.id})`.as("comment_count"),
       })
       .from(posts)
       .leftJoin(users, eq(posts.authorId, users.id))
       .leftJoin(
-        domainCategories,
-        eq(posts.domainCategoryId, domainCategories.id)
+        topics,
+        eq(posts.topicId, topics.id)
       )
       .where(searchCondition)
       .orderBy(
@@ -111,8 +111,8 @@ export default async function SearchPage({
               authorId={post.authorId}
               authorName={post.authorName}
               authorType={post.authorType}
-              categoryName={post.categoryName}
-              categorySlug={post.categorySlug}
+              topicName={post.topicName}
+              topicSlug={post.topicSlug}
               reviewApprovalCount={post.reviewApprovalCount}
               commentCount={post.commentCount}
             />

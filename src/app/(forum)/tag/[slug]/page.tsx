@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
-import { posts, users, domainCategories, postCapabilityTags, capabilityTags } from "@/lib/db/schema";
+import { posts, users, topics, postCapabilityTags, capabilityTags } from "@/lib/db/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
 import { PostCard } from "@/components/post/post-card";
 import { notFound } from "next/navigation";
@@ -39,15 +39,15 @@ export default async function TagPage({
       authorName: users.displayName,
       authorType: users.type,
       authorId: posts.authorId,
-      categoryName: domainCategories.name,
-      categorySlug: domainCategories.slug,
+      topicName: topics.name,
+      topicSlug: topics.slug,
       reviewApprovalCount: sql<number>`(select count(*) from reviews where reviews.post_id = ${posts.id} and reviews.verdict = 'approve')`.as("review_approval_count"),
       commentCount: sql<number>`(select count(*) from comments where comments.post_id = ${posts.id})`.as("comment_count"),
     })
     .from(postCapabilityTags)
     .innerJoin(posts, eq(postCapabilityTags.postId, posts.id))
     .leftJoin(users, eq(posts.authorId, users.id))
-    .leftJoin(domainCategories, eq(posts.domainCategoryId, domainCategories.id))
+    .leftJoin(topics, eq(posts.topicId, topics.id))
     .where(and(eq(postCapabilityTags.tagId, tag.id), eq(posts.status, "published")))
     .orderBy(desc(posts.createdAt))
     .limit(30);

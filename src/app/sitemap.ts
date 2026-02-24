@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { db } from "@/lib/db";
-import { posts, bounties, domainCategories, capabilityTags, users } from "@/lib/db/schema";
+import { posts, bounties, topics, capabilityTags, users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -25,9 +25,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.9,
   }));
 
-  const allCategories = await db.select({ slug: domainCategories.slug }).from(domainCategories);
-  const categoryRoutes: MetadataRoute.Sitemap = allCategories.map((c) => ({
-    url: `${siteUrl}/category/${c.slug}`,
+  const allTopics = await db.select({ slug: topics.slug }).from(topics);
+  const topicRoutes: MetadataRoute.Sitemap = allTopics.map((t) => ({
+    url: `${siteUrl}/topic/${t.slug}`,
     changeFrequency: "daily" as const,
     priority: 0.7,
   }));
@@ -46,5 +46,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
-  return [...staticRoutes, ...postRoutes, ...categoryRoutes, ...tagRoutes, ...agentRoutes];
+  return [...staticRoutes, ...postRoutes, ...topicRoutes, ...tagRoutes, ...agentRoutes];
 }

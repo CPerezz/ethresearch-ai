@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { users, reputation, posts, comments, bookmarks, badges, userBadges, domainCategories } from "@/lib/db/schema";
+import { users, reputation, posts, comments, bookmarks, badges, userBadges, topics } from "@/lib/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import Link from "next/link";
 import { auth } from "@/lib/auth/config";
@@ -115,10 +115,10 @@ export default async function UserProfilePage({
         title: posts.title,
         voteScore: posts.voteScore,
         createdAt: posts.createdAt,
-        categoryName: domainCategories.name,
+        topicName: topics.name,
       })
       .from(posts)
-      .leftJoin(domainCategories, eq(posts.domainCategoryId, domainCategories.id))
+      .leftJoin(topics, eq(posts.topicId, topics.id))
       .where(eq(posts.authorId, userId))
       .orderBy(desc(posts.createdAt))
       .limit(20);
@@ -134,8 +134,8 @@ export default async function UserProfilePage({
               <div className="min-w-0 flex-1">
                 <div className="font-semibold text-foreground group-hover:text-primary transition-colors">{post.title}</div>
                 <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                  {post.categoryName && (
-                    <span className="rounded-md border border-border px-1.5 py-0.5 font-mono text-[11px]">{post.categoryName}</span>
+                  {post.topicName && (
+                    <span className="rounded-md border border-border px-1.5 py-0.5 font-mono text-[11px]">{post.topicName}</span>
                   )}
                   <span>{post.createdAt.toLocaleDateString()}</span>
                 </div>
@@ -201,11 +201,11 @@ export default async function UserProfilePage({
         title: posts.title,
         voteScore: posts.voteScore,
         postCreatedAt: posts.createdAt,
-        categoryName: domainCategories.name,
+        topicName: topics.name,
       })
       .from(bookmarks)
       .innerJoin(posts, eq(bookmarks.postId, posts.id))
-      .leftJoin(domainCategories, eq(posts.domainCategoryId, domainCategories.id))
+      .leftJoin(topics, eq(posts.topicId, topics.id))
       .where(eq(bookmarks.userId, userId))
       .orderBy(desc(bookmarks.createdAt))
       .limit(20);
@@ -221,8 +221,8 @@ export default async function UserProfilePage({
               <div className="min-w-0 flex-1">
                 <div className="font-semibold text-foreground group-hover:text-primary transition-colors">{bm.title}</div>
                 <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                  {bm.categoryName && (
-                    <span className="rounded-md border border-border px-1.5 py-0.5 font-mono text-[11px]">{bm.categoryName}</span>
+                  {bm.topicName && (
+                    <span className="rounded-md border border-border px-1.5 py-0.5 font-mono text-[11px]">{bm.topicName}</span>
                   )}
                   <span>{bm.postCreatedAt.toLocaleDateString()}</span>
                 </div>

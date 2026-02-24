@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
-import { posts, users, domainCategories, bounties, reviews, reputation, comments, userBadges, badges } from "@/lib/db/schema";
+import { posts, users, topics, bounties, reviews, reputation, comments, userBadges, badges } from "@/lib/db/schema";
 import { eq, desc, sql, and, gte } from "drizzle-orm";
 import Link from "next/link";
-import { getCategoryColor } from "@/lib/category-colors";
+import { getTopicColor } from "@/lib/topic-colors";
 
 export const dynamic = "force-dynamic";
 
@@ -47,14 +47,14 @@ export default async function DigestPage() {
       authorName: users.displayName,
       authorId: posts.authorId,
       authorType: users.type,
-      categoryName: domainCategories.name,
-      categorySlug: domainCategories.slug,
+      topicName: topics.name,
+      topicSlug: topics.slug,
       reviewApprovalCount: sql<number>`(select count(*) from reviews where reviews.post_id = ${posts.id} and reviews.verdict = 'approve')`.as("review_approval_count"),
       commentCount: sql<number>`(select count(*) from comments where comments.post_id = ${posts.id})`.as("comment_count"),
     })
     .from(posts)
     .leftJoin(users, eq(posts.authorId, users.id))
-    .leftJoin(domainCategories, eq(posts.domainCategoryId, domainCategories.id))
+    .leftJoin(topics, eq(posts.topicId, topics.id))
     .where(and(eq(posts.status, "published"), gte(posts.createdAt, sevenDaysAgo)))
     .orderBy(desc(hotScore))
     .limit(10);
@@ -67,12 +67,12 @@ export default async function DigestPage() {
       reputationReward: bounties.reputationReward,
       createdAt: bounties.createdAt,
       authorName: users.displayName,
-      categoryName: domainCategories.name,
+      topicName: topics.name,
       submissionCount: sql<number>`(select count(*) from posts where posts.bounty_id = ${bounties.id})`.as("submission_count"),
     })
     .from(bounties)
     .leftJoin(users, eq(bounties.authorId, users.id))
-    .leftJoin(domainCategories, eq(bounties.categoryId, domainCategories.id))
+    .leftJoin(topics, eq(bounties.topicId, topics.id))
     .where(eq(bounties.status, "open"))
     .orderBy(desc(bounties.createdAt))
     .limit(10);
@@ -154,7 +154,7 @@ export default async function DigestPage() {
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="space-y-3">
               {hotPosts.map((post, idx) => {
-                const catColor = getCategoryColor(post.categorySlug);
+                const topicColor = getTopicColor(post.topicSlug);
                 return (
                   <div key={post.id} className="flex items-center gap-3">
                     <span className="w-6 shrink-0 text-right text-sm font-bold text-muted-foreground">
@@ -186,12 +186,12 @@ export default async function DigestPage() {
                             {post.authorName}
                           </Link>
                         )}
-                        {post.categoryName && (
+                        {post.topicName && (
                           <span
                             className="rounded-md px-1.5 py-0.5 text-[10px] font-semibold"
-                            style={{ backgroundColor: catColor.bg, color: catColor.text }}
+                            style={{ backgroundColor: topicColor.bg, color: topicColor.text }}
                           >
-                            {post.categoryName}
+                            {post.topicName}
                           </span>
                         )}
                       </div>
@@ -229,7 +229,7 @@ export default async function DigestPage() {
                     </Link>
                     <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
                       {bounty.authorName && <span>by {bounty.authorName}</span>}
-                      {bounty.categoryName && <span>&middot; {bounty.categoryName}</span>}
+                      {bounty.topicName && <span>&middot; {bounty.topicName}</span>}
                       <span>&middot; {timeAgo(bounty.createdAt)}</span>
                     </div>
                   </div>

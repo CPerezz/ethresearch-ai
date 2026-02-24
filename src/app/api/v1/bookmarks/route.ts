@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { bookmarks, posts, users, domainCategories } from "@/lib/db/schema";
+import { bookmarks, posts, users, topics } from "@/lib/db/schema";
 import { authenticateAgent } from "@/lib/auth/middleware";
 import { eq, and, desc } from "drizzle-orm";
 import { NextResponse } from "next/server";
@@ -63,14 +63,14 @@ export const GET = apiHandler(async (request: Request) => {
       authorId: posts.authorId,
       authorName: users.displayName,
       authorType: users.type,
-      categoryName: domainCategories.name,
-      categorySlug: domainCategories.slug,
+      topicName: topics.name,
+      topicSlug: topics.slug,
       bookmarkedAt: bookmarks.createdAt,
     })
     .from(bookmarks)
     .innerJoin(posts, eq(bookmarks.postId, posts.id))
     .leftJoin(users, eq(posts.authorId, users.id))
-    .leftJoin(domainCategories, eq(posts.domainCategoryId, domainCategories.id))
+    .leftJoin(topics, eq(posts.topicId, topics.id))
     .where(eq(bookmarks.userId, user.id))
     .orderBy(desc(bookmarks.createdAt))
     .limit(limit)

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
-import { bounties, users, domainCategories } from "@/lib/db/schema";
+import { bounties, users, topics } from "@/lib/db/schema";
 import { eq, desc, count, sql, and, isNotNull, isNull, gte } from "drizzle-orm";
 import Link from "next/link";
-import { getCategoryColor } from "@/lib/category-colors";
+import { getTopicColor } from "@/lib/topic-colors";
 import { Pagination } from "@/components/pagination";
 import { BountyFilters } from "@/components/bounty/bounty-filters";
 import { formatEther, parseEther } from "viem";
@@ -32,13 +32,13 @@ const statusColors: Record<string, string> = {
 export default async function BountiesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; page?: string; type?: string; minEth?: string; category?: string }>;
+  searchParams: Promise<{ status?: string; page?: string; type?: string; minEth?: string; topic?: string }>;
 }) {
   const params = await searchParams;
   const status = params.status === "paid" ? "paid" : "open";
   const type = ["eth", "rep"].includes(params.type ?? "") ? (params.type as "eth" | "rep") : "all";
   const minEthParam = params.minEth ?? "";
-  const categorySlug = params.category ?? "all";
+  const topicSlug = params.topic ?? "all";
   const page = Math.max(1, parseInt(params.page ?? "1"));
   const perPage = 20;
   const offset = (page - 1) * perPage;
@@ -70,19 +70,19 @@ export default async function BountiesPage({
     }
   }
 
-  if (categorySlug !== "all") {
-    whereConditions.push(eq(domainCategories.slug, categorySlug));
+  if (topicSlug !== "all") {
+    whereConditions.push(eq(topics.slug, topicSlug));
   }
 
   const conditions = whereConditions.length > 0 ? and(...whereConditions) : undefined;
 
-  // Fetch categories for filters + count + bounty results in parallel
-  const [allCategories, [totalResult], bountyResults] = await Promise.all([
-    db.select({ slug: domainCategories.slug, name: domainCategories.name }).from(domainCategories).orderBy(domainCategories.name),
+  // Fetch topics for filters + count + bounty results in parallel
+  const [allTopics, [totalResult], bountyResults] = await Promise.all([
+    db.select({ slug: topics.slug, name: topics.name }).from(topics).orderBy(topics.name),
     db
       .select({ count: count() })
       .from(bounties)
-      .leftJoin(domainCategories, eq(bounties.categoryId, domainCategories.id))
+      .leftJoin(topics, eq(bounties.topicId, topics.id))
       .where(conditions),
     db
       .select({
@@ -96,13 +96,13 @@ export default async function BountiesPage({
         deadline: bounties.deadline,
         createdAt: bounties.createdAt,
         authorName: users.displayName,
-        categoryName: domainCategories.name,
-        categorySlug: domainCategories.slug,
+        topicName: topics.name,
+        topicSlug: topics.slug,
         submissionCount: sql<number>`(select count(*) from posts where posts.bounty_id = ${bounties.id})`.as("submission_count"),
       })
       .from(bounties)
       .leftJoin(users, eq(bounties.authorId, users.id))
-      .leftJoin(domainCategories, eq(bounties.categoryId, domainCategories.id))
+      .leftJoin(topics, eq(bounties.topicId, topics.id))
       .where(conditions)
       .orderBy(
         sql`CASE WHEN ${bounties.ethAmount} IS NOT NULL THEN 0 ELSE 1 END`,
@@ -125,7 +125,7 @@ export default async function BountiesPage({
   if (status !== "open") paginationParams.status = status;
   if (type !== "all") paginationParams.type = type;
   if (minEthParam) paginationParams.minEth = minEthParam;
-  if (categorySlug !== "all") paginationParams.category = categorySlug;
+  if (topicSlug !== "all") paginationParams.topic = topicSlug;
 
   return (
     <div className="flex-1 min-w-0">
@@ -168,13 +168,13 @@ export default async function BountiesPage({
       </div>
 
       {/* Filters */}
-      <BountyFilters categories={allCategories} />
+      <BountyFilters topics={allTopics} />
 
       {/* Bounty cards */}
       <div className="space-y-3">
         {bountyResults.length ? (
           bountyResults.map((bounty) => {
-            const catColor = getCategoryColor(bounty.categorySlug);
+            const topicColor = getTopicColor(bounty.topicSlug);
             return (
               <div
                 key={bounty.id}
@@ -183,12 +183,12 @@ export default async function BountiesPage({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                      {bounty.categoryName && (
+                      {bounty.topicName && (
                         <span
                           className="rounded-md px-2 py-0.5 text-[11px] font-semibold"
-                          style={{ backgroundColor: catColor.bg, color: catColor.text }}
+                          style={{ backgroundColor: topicColor.bg, color: topicColor.text }}
                         >
-                          {bounty.categoryName}
+                          {bounty.topicName}
                         </span>
                       )}
                       <span

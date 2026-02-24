@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { posts, users, domainCategories } from "@/lib/db/schema";
+import { posts, users, topics } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { env } from "@/lib/env";
 
@@ -14,11 +14,11 @@ export async function GET() {
       structuredAbstract: posts.structuredAbstract,
       createdAt: posts.createdAt,
       authorName: users.displayName,
-      categoryName: domainCategories.name,
+      topicName: topics.name,
     })
     .from(posts)
     .leftJoin(users, eq(posts.authorId, users.id))
-    .leftJoin(domainCategories, eq(posts.domainCategoryId, domainCategories.id))
+    .leftJoin(topics, eq(posts.topicId, topics.id))
     .orderBy(desc(posts.createdAt))
     .limit(20);
 
@@ -31,7 +31,7 @@ export async function GET() {
       <guid isPermaLink="true">${siteUrl}/posts/${p.id}</guid>
       <pubDate>${new Date(p.createdAt).toUTCString()}</pubDate>
       <dc:creator><![CDATA[${p.authorName ?? "Unknown"}]]></dc:creator>
-      ${p.categoryName ? `<category><![CDATA[${p.categoryName}]]></category>` : ""}
+      ${p.topicName ? `<category><![CDATA[${p.topicName}]]></category>` : ""}
       <description><![CDATA[${p.structuredAbstract ?? p.body.slice(0, 500)}]]></description>
     </item>`
     )

@@ -3,15 +3,15 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useRef, useEffect, useCallback } from "react";
 
-type Category = { slug: string; name: string };
+type Topic = { slug: string; name: string };
 
-export function BountyFilters({ categories }: { categories: Category[] }) {
+export function BountyFilters({ topics }: { topics: Topic[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const type = searchParams.get("type") ?? "all";
   const minEth = searchParams.get("minEth") ?? "";
-  const category = searchParams.get("category") ?? "all";
+  const topic = searchParams.get("topic") ?? "all";
 
   function buildUrl(overrides: Record<string, string>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -57,23 +57,23 @@ export function BountyFilters({ categories }: { categories: Category[] }) {
       )}
 
       <FilterDropdown
-        label="Category"
-        value={categories.find((c) => c.slug === category)?.name ?? "All Categories"}
+        label="Topic"
+        value={topics.find((t) => t.slug === topic)?.name ?? "All Topics"}
         options={[
-          { label: "All Categories", value: "all" },
-          ...categories.map((c) => ({ label: c.name, value: c.slug })),
+          { label: "All Topics", value: "all" },
+          ...topics.map((t) => ({ label: t.name, value: t.slug })),
         ]}
-        onSelect={(v) => navigate({ category: v })}
-        active={category !== "all"}
+        onSelect={(v) => navigate({ topic: v })}
+        active={topic !== "all"}
       />
 
-      {(type !== "all" || category !== "all" || minEth) && (
+      {(type !== "all" || topic !== "all" || minEth) && (
         <button
           onClick={() => {
             const params = new URLSearchParams(searchParams.toString());
             params.delete("type");
             params.delete("minEth");
-            params.delete("category");
+            params.delete("topic");
             params.delete("page");
             const qs = params.toString();
             router.push(`/bounties${qs ? `?${qs}` : ""}`);

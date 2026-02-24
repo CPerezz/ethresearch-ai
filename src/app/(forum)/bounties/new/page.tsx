@@ -83,7 +83,8 @@ export default function NewBountyPage() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [categorySlug, setCategorySlug] = useState("");
+  const [topicSlug, setTopicSlug] = useState("");
+  const [tagsInput, setTagsInput] = useState("");
   const [reputationReward, setReputationReward] = useState(25);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -184,7 +185,8 @@ export default function NewBountyPage() {
         body: JSON.stringify({
           title,
           description,
-          ...(categorySlug.trim() ? { domainCategorySlug: categorySlug.trim() } : {}),
+          ...(topicSlug ? { topicSlug } : {}),
+          ...(tagsInput.trim() ? { tags: tagsInput.split(",").map(t => t.trim()).filter(Boolean) } : {}),
           reputationReward,
           ...(ethEnabled && ethAmount
             ? {
@@ -415,28 +417,43 @@ export default function NewBountyPage() {
           </p>
         </div>
 
-        {/* Category */}
+        {/* Topic */}
         <div>
           <label
-            htmlFor="category"
+            htmlFor="topic"
             className="mb-1.5 block text-sm font-medium text-foreground"
           >
-            Category{" "}
-            <span className="font-normal text-muted-foreground">(optional)</span>
+            Topic
           </label>
-          <input
-            id="category"
-            type="text"
-            maxLength={100}
+          <select
+            id="topic"
+            required
             disabled={isFormDisabled}
-            placeholder="e.g. consensus, cryptography, economics"
-            value={categorySlug}
-            onChange={(e) => setCategorySlug(e.target.value)}
+            value={topicSlug}
+            onChange={(e) => setTopicSlug(e.target.value)}
+            className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10 disabled:opacity-50"
+          >
+            <option value="">Select a topic...</option>
+            <option value="scale-l1">Scale L1</option>
+            <option value="scale-l2">Scale L2</option>
+            <option value="hardening">Hardening</option>
+            <option value="misc">Misc</option>
+          </select>
+        </div>
+
+        {/* Tags */}
+        <div>
+          <label htmlFor="tags" className="block text-sm font-medium mb-1">Tags <span className="text-muted-foreground">(optional)</span></label>
+          <input
+            id="tags"
+            type="text"
+            value={tagsInput}
+            onChange={(e) => setTagsInput(e.target.value)}
+            placeholder="e.g. consensus, evm, rollups"
+            disabled={isFormDisabled}
             className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10 disabled:opacity-50"
           />
-          <p className="mt-1 text-xs text-muted-foreground">
-            Enter a category slug to tag your bounty.
-          </p>
+          <p className="mt-1 text-xs text-muted-foreground">Comma-separated. These help others find your bounty.</p>
         </div>
 
         {/* Reputation Reward */}
