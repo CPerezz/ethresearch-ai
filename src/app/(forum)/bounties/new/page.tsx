@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useFundBounty } from "@/lib/web3/use-bounty-escrow";
@@ -100,6 +100,8 @@ export default function NewBountyPage() {
   const [txState, setTxState] = useState<TxState>("idle");
   const [pendingBountyId, setPendingBountyId] = useState<number | null>(null);
 
+  const deadlineMsRef = useRef<number>(0);
+
   const effectiveDays = useCustomDays ? parseInt(customDays) || 14 : deadlineDays;
 
   // When tx hash is available, record on backend
@@ -116,9 +118,7 @@ export default function NewBountyPage() {
       if (!isSuccess || !hash || !pendingBountyId || txState !== "confirming") return;
       setTxState("recording");
       try {
-        const deadlineDate = new Date(
-          Date.now() + effectiveDays * 24 * 60 * 60 * 1000
-        ).toISOString();
+        const deadlineDate = new Date(deadlineMsRef.current).toISOString();
 
         const weiAmount = parseEther(ethAmount).toString();
 
@@ -149,7 +149,7 @@ export default function NewBountyPage() {
       }
     }
     recordFunding();
-  }, [isSuccess, txState, hash, pendingBountyId, effectiveDays, ethAmount, router]);
+  }, [isSuccess, txState, hash, pendingBountyId, ethAmount, router]);
 
   // Handle tx errors
   useEffect(() => {
@@ -183,6 +183,11 @@ export default function NewBountyPage() {
       return;
     }
 
+    // Compute buffered deadline ONCE and store in ref for reuse.
+    // 10-min buffer accounts for mempool delay between Date.now() and block.timestamp.
+    const MEMPOOL_BUFFER_MS = 600_000;
+    deadlineMsRef.current = Date.now() + effectiveDays * 86_400_000 + MEMPOOL_BUFFER_MS;
+
     try {
       // Step 1: Create bounty via API
       const res = await fetch("/api/v1/bounties", {
@@ -198,9 +203,7 @@ export default function NewBountyPage() {
             ? {
                 ethAmount: parseEther(ethAmount).toString(),
                 chainId: DEFAULT_CHAIN_ID,
-                deadline: new Date(
-                  Date.now() + effectiveDays * 24 * 60 * 60 * 1000
-                ).toISOString(),
+                deadline: new Date(deadlineMsRef.current).toISOString(),
               }
             : {}),
         }),
@@ -224,14 +227,14 @@ export default function NewBountyPage() {
       if (ethEnabled && ethAmount && isConnected) {
         setPendingBountyId(bountyId);
         setTxState("submitting");
-        // Add 10-minute buffer to account for mempool/block confirmation delay.
-        // Without this, a 1-day deadline computed at time T can revert if
-        // block.timestamp > T when the tx is mined (MIN_DEADLINE_OFFSET check).
-        const MEMPOOL_BUFFER_SECS = 600;
-        const deadlineTimestamp =
-          Math.floor(
-            (Date.now() + effectiveDays * 24 * 60 * 60 * 1000) / 1000
-          ) + MEMPOOL_BUFFER_SECS;
+        const deadlineTimestamp = Math.floor(deadlineMsRef.current / 1000);
+        // Pre-flight: verify deadline will pass contract check even if block is mined now
+        const nowSecs = Math.floor(Date.now() / 1000);
+        if (deadlineTimestamp < nowSecs + 86400 + 60) {
+          setError("Deadline too close to pass on-chain validation. Please increase the deadline.");
+          setSubmitting(false);
+          return;
+        }
         fund(bountyId, ethAmount, deadlineTimestamp);
         // The useEffect hooks above handle the rest of the flow
         return;
