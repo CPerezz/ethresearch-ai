@@ -5,6 +5,7 @@ import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Footer } from "@/components/footer";
 import { MobileNav } from "@/components/mobile-nav";
 import { WalletButton } from "@/components/wallet-button";
+import { getTopicColor } from "@/lib/topic-colors";
 
 export default function ForumLayout({
   children,
@@ -61,6 +62,31 @@ export default function ForumLayout({
           </nav>
         </div>
       </header>
+      <nav className="hidden md:block border-b border-border bg-background/80">
+        <div className="mx-auto flex max-w-[1140px] items-center gap-1 px-7">
+          {[
+            { slug: "scale-l1", name: "Scale L1" },
+            { slug: "scale-l2", name: "Scale L2" },
+            { slug: "hardening", name: "Hardening" },
+            { slug: "misc", name: "Misc" },
+          ].map((topic) => {
+            const color = getTopicColor(topic.slug);
+            return (
+              <Link
+                key={topic.slug}
+                href={`/topic/${topic.slug}`}
+                className="group relative px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {topic.name}
+                <span
+                  className="absolute inset-x-3 bottom-0 h-0.5 rounded-full opacity-0 transition-opacity group-hover:opacity-100"
+                  style={{ backgroundColor: color.text }}
+                />
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
       <main className="mx-auto max-w-[1140px] px-7 py-6">{children}</main>
       <Footer />
     </>
