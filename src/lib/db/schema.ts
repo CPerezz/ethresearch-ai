@@ -10,6 +10,7 @@ import {
   jsonb,
   index,
   uniqueIndex,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -71,6 +72,23 @@ export const domainCategories = pgTable("domain_categories", {
   description: text("description"),
 });
 
+// Topics table (replaces domain_categories)
+export const topics = pgTable("topics", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 50 }).notNull(),
+  slug: varchar("slug", { length: 50 }).notNull().unique(),
+  description: text("description"),
+  color: varchar("color", { length: 20 }).notNull(),
+});
+
+// Tags table (free-form, user-created)
+export const tags = pgTable("tags", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 80 }).notNull(),
+  slug: varchar("slug", { length: 80 }).notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // Capability Tags
 export const capabilityTags = pgTable("capability_tags", {
   id: serial("id").primaryKey(),
@@ -87,6 +105,7 @@ export const posts = pgTable("posts", {
   structuredAbstract: text("structured_abstract"),
   status: postStatusEnum("status").notNull().default("published"),
   domainCategoryId: integer("domain_category_id").references(() => domainCategories.id),
+  topicId: integer("topic_id").references(() => topics.id),
   citationRefs: jsonb("citation_refs").$type<{ postId?: number; url?: string; label: string }[]>().default([]),
   evidenceLinks: jsonb("evidence_links").$type<{ url: string; label: string; type: string }[]>().default([]),
   voteScore: integer("vote_score").notNull().default(0),
@@ -100,6 +119,7 @@ export const posts = pgTable("posts", {
   index("posts_created_at_idx").on(table.createdAt),
   index("posts_vote_score_idx").on(table.voteScore),
   index("posts_bounty_idx").on(table.bountyId),
+  index("posts_topic_idx").on(table.topicId),
 ]);
 
 // Posts <-> Capability Tags (many-to-many)
@@ -206,6 +226,7 @@ export const bounties = pgTable("bounties", {
   title: varchar("title", { length: 200 }).notNull(),
   description: text("description").notNull(),
   categoryId: integer("category_id").references(() => domainCategories.id),
+  topicId: integer("topic_id").references(() => topics.id),
   status: bountyStatusEnum("status").notNull().default("open"),
   winnerPostId: integer("winner_post_id"),
   reputationReward: integer("reputation_reward").notNull().default(25),
@@ -240,6 +261,26 @@ export const bountyTransactions = pgTable("bounty_transactions", {
   uniqueIndex("bounty_tx_hash_chain_idx").on(table.txHash, table.chainId),
 ]);
 
+// Post-tag join table
+export const postTags = pgTable("post_tags", {
+  postId: integer("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+  tagId: integer("tag_id").notNull().references(() => tags.id, { onDelete: "cascade" }),
+}, (table) => [
+  primaryKey({ columns: [table.postId, table.tagId] }),
+  index("post_tags_post_idx").on(table.postId),
+  index("post_tags_tag_idx").on(table.tagId),
+]);
+
+// Bounty-tag join table
+export const bountyTags = pgTable("bounty_tags", {
+  bountyId: integer("bounty_id").notNull().references(() => bounties.id, { onDelete: "cascade" }),
+  tagId: integer("tag_id").notNull().references(() => tags.id, { onDelete: "cascade" }),
+}, (table) => [
+  primaryKey({ columns: [table.bountyId, table.tagId] }),
+  index("bounty_tags_bounty_idx").on(table.bountyId),
+  index("bounty_tags_tag_idx").on(table.tagId),
+]);
+
 // Reviews
 export const reviews = pgTable("reviews", {
   id: serial("id").primaryKey(),
@@ -264,8 +305,10 @@ export const usersRelations = relations(users, ({ many, one }) => ({
 export const postsRelations = relations(posts, ({ one, many }) => ({
   author: one(users, { fields: [posts.authorId], references: [users.id] }),
   domainCategory: one(domainCategories, { fields: [posts.domainCategoryId], references: [domainCategories.id] }),
+  topic: one(topics, { fields: [posts.topicId], references: [topics.id] }),
   comments: many(comments),
   capabilityTags: many(postCapabilityTags),
+  postTags: many(postTags),
   reviews: many(reviews),
 }));
 
@@ -310,8 +353,10 @@ export const bookmarksRelations = relations(bookmarks, ({ one }) => ({
 export const bountiesRelations = relations(bounties, ({ one, many }) => ({
   author: one(users, { fields: [bounties.authorId], references: [users.id] }),
   category: one(domainCategories, { fields: [bounties.categoryId], references: [domainCategories.id] }),
+  topic: one(topics, { fields: [bounties.topicId], references: [topics.id] }),
   winnerPost: one(posts, { fields: [bounties.winnerPostId], references: [posts.id] }),
   transactions: many(bountyTransactions),
+  bountyTags: many(bountyTags),
 }));
 
 export const bountyTransactionsRelations = relations(bountyTransactions, ({ one }) => ({
@@ -321,4 +366,24 @@ export const bountyTransactionsRelations = relations(bountyTransactions, ({ one 
 export const reviewsRelations = relations(reviews, ({ one }) => ({
   post: one(posts, { fields: [reviews.postId], references: [posts.id] }),
   reviewer: one(users, { fields: [reviews.reviewerId], references: [users.id] }),
+}));
+
+export const topicsRelations = relations(topics, ({ many }) => ({
+  posts: many(posts),
+  bounties: many(bounties),
+}));
+
+export const tagsRelations = relations(tags, ({ many }) => ({
+  postTags: many(postTags),
+  bountyTags: many(bountyTags),
+}));
+
+export const postTagsRelations = relations(postTags, ({ one }) => ({
+  post: one(posts, { fields: [postTags.postId], references: [posts.id] }),
+  tag: one(tags, { fields: [postTags.tagId], references: [tags.id] }),
+}));
+
+export const bountyTagsRelations = relations(bountyTags, ({ one }) => ({
+  bounty: one(bounties, { fields: [bountyTags.bountyId], references: [bounties.id] }),
+  tag: one(tags, { fields: [bountyTags.tagId], references: [tags.id] }),
 }));
