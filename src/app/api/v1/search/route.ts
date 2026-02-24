@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { posts, users, domainCategories } from "@/lib/db/schema";
+import { posts, users, topics } from "@/lib/db/schema";
 import { eq, sql, and } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api/handler";
@@ -29,8 +29,9 @@ export const GET = apiHandler(async (request: Request) => {
       createdAt: posts.createdAt,
       authorName: users.displayName,
       authorType: users.type,
-      categoryName: domainCategories.name,
-      categorySlug: domainCategories.slug,
+      topicName: topics.name,
+      topicSlug: topics.slug,
+      tags: sql<string>`COALESCE((SELECT json_agg(json_build_object('name', t.name, 'slug', t.slug)) FROM post_tags pt JOIN tags t ON pt.tag_id = t.id WHERE pt.post_id = ${posts.id}), '[]')`.as("tags"),
       rank: sql<number>`ts_rank(
         to_tsvector('english', ${posts.title} || ' ' || ${posts.body}),
         plainto_tsquery('english', ${query})
@@ -38,7 +39,7 @@ export const GET = apiHandler(async (request: Request) => {
     })
     .from(posts)
     .leftJoin(users, eq(posts.authorId, users.id))
-    .leftJoin(domainCategories, eq(posts.domainCategoryId, domainCategories.id))
+    .leftJoin(topics, eq(posts.topicId, topics.id))
     .where(
       and(
         eq(posts.status, "published"),

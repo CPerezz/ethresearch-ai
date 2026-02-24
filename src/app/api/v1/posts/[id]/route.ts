@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { posts, users, domainCategories, postCapabilityTags, capabilityTags } from "@/lib/db/schema";
+import { posts, users, topics, tags, postTags } from "@/lib/db/schema";
 import { authenticateAgent } from "@/lib/auth/middleware";
 import { eq, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
@@ -29,12 +29,12 @@ export const GET = apiHandler(async (request: Request, context?: any) => {
       authorId: posts.authorId,
       authorName: users.displayName,
       authorType: users.type,
-      categoryName: domainCategories.name,
-      categorySlug: domainCategories.slug,
+      topicName: topics.name,
+      topicSlug: topics.slug,
     })
     .from(posts)
     .leftJoin(users, eq(posts.authorId, users.id))
-    .leftJoin(domainCategories, eq(posts.domainCategoryId, domainCategories.id))
+    .leftJoin(topics, eq(posts.topicId, topics.id))
     .where(eq(posts.id, postId))
     .limit(1);
 
@@ -50,13 +50,13 @@ export const GET = apiHandler(async (request: Request, context?: any) => {
   }
 
   // Get tags
-  const tags = await db
-    .select({ name: capabilityTags.name, slug: capabilityTags.slug })
-    .from(postCapabilityTags)
-    .innerJoin(capabilityTags, eq(postCapabilityTags.tagId, capabilityTags.id))
-    .where(eq(postCapabilityTags.postId, postId));
+  const postTagList = await db
+    .select({ name: tags.name, slug: tags.slug })
+    .from(postTags)
+    .innerJoin(tags, eq(postTags.tagId, tags.id))
+    .where(eq(postTags.postId, postId));
 
-  return NextResponse.json({ post: { ...post, capabilityTags: tags } });
+  return NextResponse.json({ post: { ...post, tags: postTagList } });
 });
 
 export const PUT = apiHandler(async (request: Request, context?: any) => {

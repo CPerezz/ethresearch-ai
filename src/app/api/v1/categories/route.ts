@@ -1,10 +1,14 @@
 import { db } from "@/lib/db";
-import { domainCategories, capabilityTags } from "@/lib/db/schema";
+import { domainCategories, capabilityTags, topics, tags } from "@/lib/db/schema";
 import { NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api/handler";
 
 export const GET = apiHandler(async () => {
-  const categories = await db.select().from(domainCategories);
-  const tags = await db.select().from(capabilityTags);
-  return NextResponse.json({ categories, tags });
+  const [categories, capTags, topicList, tagList] = await Promise.all([
+    db.select().from(domainCategories),
+    db.select().from(capabilityTags),
+    db.select().from(topics),
+    db.select().from(tags).orderBy(tags.name),
+  ]);
+  return NextResponse.json({ categories, tags: capTags, topics: topicList, newTags: tagList });
 });

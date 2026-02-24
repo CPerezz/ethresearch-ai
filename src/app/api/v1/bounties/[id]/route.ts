@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { bounties, users, domainCategories, posts } from "@/lib/db/schema";
+import { bounties, users, topics, posts } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api/handler";
@@ -26,12 +26,12 @@ export const GET = apiHandler(async (request: Request, context?: any) => {
       closedAt: bounties.closedAt,
       authorId: bounties.authorId,
       authorName: users.displayName,
-      categoryName: domainCategories.name,
-      categorySlug: domainCategories.slug,
+      topicName: topics.name,
+      topicSlug: topics.slug,
     })
     .from(bounties)
     .leftJoin(users, eq(bounties.authorId, users.id))
-    .leftJoin(domainCategories, eq(bounties.categoryId, domainCategories.id))
+    .leftJoin(topics, eq(bounties.topicId, topics.id))
     .where(eq(bounties.id, bountyId))
     .limit(1);
 

@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { bounties, users, domainCategories, posts } from "@/lib/db/schema";
+import { bounties, users, topics, tags, bountyTags, posts } from "@/lib/db/schema";
 import { authenticateAgent } from "@/lib/auth/middleware";
 import { eq, desc, sql, and } from "drizzle-orm";
 import { NextResponse } from "next/server";
@@ -36,13 +36,14 @@ export const GET = apiHandler(async (request: Request) => {
       closedAt: bounties.closedAt,
       authorId: bounties.authorId,
       authorName: users.displayName,
-      categoryName: domainCategories.name,
-      categorySlug: domainCategories.slug,
+      topicName: topics.name,
+      topicSlug: topics.slug,
+      tags: sql<string>`COALESCE((SELECT json_agg(json_build_object('name', t.name, 'slug', t.slug)) FROM bounty_tags bt JOIN tags t ON bt.tag_id = t.id WHERE bt.bounty_id = ${bounties.id}), '[]')`.as("tags"),
       submissionCount: sql<number>`(select count(*) from posts where posts.bounty_id = ${bounties.id})`.as("submission_count"),
     })
     .from(bounties)
     .leftJoin(users, eq(bounties.authorId, users.id))
-    .leftJoin(domainCategories, eq(bounties.categoryId, domainCategories.id))
+    .leftJoin(topics, eq(bounties.topicId, topics.id))
     .where(conditions.length ? and(...conditions) : undefined)
     .orderBy(desc(bounties.createdAt))
     .limit(limit)
@@ -64,16 +65,17 @@ export const POST = apiHandler(async (request: Request) => {
   const raw = await request.json();
   const parsed = parseBody(createBountySchema, raw);
   if (!parsed.success) return parsed.response;
-  const { title, description, domainCategorySlug, reputationReward, ethAmount, chainId, deadline } = parsed.data;
+  const { title, description, topicSlug, tags: tagNames, reputationReward, ethAmount, chainId, deadline } = parsed.data;
 
-  let categoryId: number | null = null;
-  if (domainCategorySlug) {
-    const [cat] = await db
-      .select({ id: domainCategories.id })
-      .from(domainCategories)
-      .where(eq(domainCategories.slug, domainCategorySlug))
+  let topicId: number | null = null;
+  if (topicSlug) {
+    const [t] = await db
+      .select({ id: topics.id })
+      .from(topics)
+      .where(eq(topics.slug, topicSlug))
       .limit(1);
-    categoryId = cat?.id ?? null;
+    if (!t) return NextResponse.json({ error: "Invalid topic" }, { status: 400 });
+    topicId = t.id;
   }
 
   const [bounty] = await db
@@ -82,13 +84,22 @@ export const POST = apiHandler(async (request: Request) => {
       authorId: user.id,
       title,
       description,
-      categoryId,
+      topicId,
       reputationReward,
       ...(ethAmount ? { ethAmount } : {}),
       ...(chainId ? { chainId } : {}),
       ...(deadline ? { deadline: new Date(deadline) } : {}),
     })
     .returning();
+
+  if (tagNames?.length) {
+    for (const tagName of tagNames) {
+      const slug = tagName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      if (!slug) continue;
+      const [tag] = await db.insert(tags).values({ name: tagName, slug }).onConflictDoUpdate({ target: tags.slug, set: { name: sql`${tags.name}` } }).returning({ id: tags.id });
+      await db.insert(bountyTags).values({ bountyId: bounty.id, tagId: tag.id }).onConflictDoNothing();
+    }
+  }
 
   return NextResponse.json({ bounty }, { status: 201 });
 });

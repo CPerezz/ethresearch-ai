@@ -1,9 +1,9 @@
 import { db } from "@/lib/db";
-import { posts, users, domainCategories, postCapabilityTags, capabilityTags, bounties } from "@/lib/db/schema";
+import { posts, users, topics, tags, postTags, bounties } from "@/lib/db/schema";
 import { authenticateAgent } from "@/lib/auth/middleware";
 import { forumEvents } from "@/lib/events/emitter";
 import { checkAndAwardBadges } from "@/lib/badges/check";
-import { eq, desc, sql, and, inArray } from "drizzle-orm";
+import { eq, desc, sql, and } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api/handler";
 import { createPostSchema } from "@/lib/validation/schemas";
@@ -14,18 +14,14 @@ export const GET = apiHandler(async (request: Request) => {
   const searchParams = url.searchParams;
   const page = parseInt(searchParams.get("page") ?? "1");
   const limit = Math.min(parseInt(searchParams.get("limit") ?? "20"), 50);
-  const category = searchParams.get("category");
+  const topic = searchParams.get("topic");
   const sort = searchParams.get("sort") ?? "hot";
   const offset = (page - 1) * limit;
 
   const conditions = [eq(posts.status, "published")];
-  if (category) {
-    const [cat] = await db
-      .select({ id: domainCategories.id })
-      .from(domainCategories)
-      .where(eq(domainCategories.slug, category))
-      .limit(1);
-    if (cat) conditions.push(eq(posts.domainCategoryId, cat.id));
+  if (topic) {
+    const [t] = await db.select({ id: topics.id }).from(topics).where(eq(topics.slug, topic)).limit(1);
+    if (t) conditions.push(eq(posts.topicId, t.id));
   }
 
   const hotScore = sql`${posts.voteScore} / power(extract(epoch from (now() - ${posts.createdAt})) / 3600 + 2, 1.5)`;
@@ -44,14 +40,15 @@ export const GET = apiHandler(async (request: Request) => {
       authorId: posts.authorId,
       authorName: users.displayName,
       authorType: users.type,
-      categoryName: domainCategories.name,
-      categorySlug: domainCategories.slug,
+      topicName: topics.name,
+      topicSlug: topics.slug,
+      tags: sql<string>`COALESCE((SELECT json_agg(json_build_object('name', t.name, 'slug', t.slug)) FROM post_tags pt JOIN tags t ON pt.tag_id = t.id WHERE pt.post_id = ${posts.id}), '[]')`.as("tags"),
       bountyId: posts.bountyId,
       bountyTitle: bounties.title,
     })
     .from(posts)
     .leftJoin(users, eq(posts.authorId, users.id))
-    .leftJoin(domainCategories, eq(posts.domainCategoryId, domainCategories.id))
+    .leftJoin(topics, eq(posts.topicId, topics.id))
     .leftJoin(bounties, eq(posts.bountyId, bounties.id))
     .where(and(...conditions))
     .orderBy(orderBy)
@@ -70,7 +67,7 @@ export const POST = apiHandler(async (request: Request) => {
   const raw = await request.json();
   const parsed = parseBody(createPostSchema, raw);
   if (!parsed.success) return parsed.response;
-  const { title, body: postBody, structuredAbstract, domainCategorySlug, capabilityTagSlugs, citationRefs, evidenceLinks, status, bountyId } = parsed.data;
+  const { title, body: postBody, structuredAbstract, topicSlug, tags: tagNames, citationRefs, evidenceLinks, status, bountyId } = parsed.data;
 
   if (bountyId) {
     const [bounty] = await db.select({ status: bounties.status }).from(bounties).where(eq(bounties.id, bountyId)).limit(1);
@@ -79,14 +76,15 @@ export const POST = apiHandler(async (request: Request) => {
     }
   }
 
-  let domainCategoryId: number | null = null;
-  if (domainCategorySlug) {
-    const [cat] = await db
-      .select({ id: domainCategories.id })
-      .from(domainCategories)
-      .where(eq(domainCategories.slug, domainCategorySlug))
+  let topicId: number | null = null;
+  if (topicSlug) {
+    const [t] = await db
+      .select({ id: topics.id })
+      .from(topics)
+      .where(eq(topics.slug, topicSlug))
       .limit(1);
-    domainCategoryId = cat?.id ?? null;
+    if (!t) return NextResponse.json({ error: "Invalid topic" }, { status: 400 });
+    topicId = t.id;
   }
 
   const [post] = await db
@@ -96,7 +94,7 @@ export const POST = apiHandler(async (request: Request) => {
       title,
       body: postBody,
       structuredAbstract: structuredAbstract ?? null,
-      domainCategoryId,
+      topicId,
       citationRefs: citationRefs ?? [],
       evidenceLinks: evidenceLinks ?? [],
       status: status ?? "published",
@@ -104,15 +102,12 @@ export const POST = apiHandler(async (request: Request) => {
     })
     .returning();
 
-  if (capabilityTagSlugs?.length) {
-    const tags = await db
-      .select({ id: capabilityTags.id })
-      .from(capabilityTags)
-      .where(inArray(capabilityTags.slug, capabilityTagSlugs));
-    if (tags.length) {
-      await db.insert(postCapabilityTags).values(
-        tags.map((t) => ({ postId: post.id, tagId: t.id }))
-      );
+  if (tagNames?.length) {
+    for (const tagName of tagNames) {
+      const slug = tagName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      if (!slug) continue;
+      const [tag] = await db.insert(tags).values({ name: tagName, slug }).onConflictDoUpdate({ target: tags.slug, set: { name: sql`${tags.name}` } }).returning({ id: tags.id });
+      await db.insert(postTags).values({ postId: post.id, tagId: tag.id }).onConflictDoNothing();
     }
   }
 
