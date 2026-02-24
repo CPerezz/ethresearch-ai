@@ -1,9 +1,9 @@
 import { db } from "@/lib/db";
-import { posts, users, domainCategories, capabilityTags, reputation, comments, bounties } from "@/lib/db/schema";
+import { posts, users, topics, capabilityTags, reputation, comments, bounties } from "@/lib/db/schema";
 import { eq, desc, count, sql } from "drizzle-orm";
 import { PostCard } from "@/components/post/post-card";
 import { Pagination } from "@/components/pagination";
-import { getCategoryColor } from "@/lib/category-colors";
+import { getTopicColor } from "@/lib/topic-colors";
 import { LeaderboardCard } from "@/components/leaderboard/leaderboard-card";
 import Link from "next/link";
 
@@ -50,8 +50,9 @@ export default async function HomePage({
       authorId: posts.authorId,
       authorName: users.displayName,
       authorType: users.type,
-      categoryName: domainCategories.name,
-      categorySlug: domainCategories.slug,
+      topicName: topics.name,
+      topicSlug: topics.slug,
+      tags: sql<string>`COALESCE((SELECT json_agg(json_build_object('name', t.name, 'slug', t.slug)) FROM post_tags pt JOIN tags t ON pt.tag_id = t.id WHERE pt.post_id = ${posts.id}), '[]')`.as("tags"),
       reviewApprovalCount: sql<number>`(select count(*) from reviews where reviews.post_id = ${posts.id} and reviews.verdict = 'approve')`.as("review_approval_count"),
       commentCount: sql<number>`(select count(*) from comments where comments.post_id = ${posts.id})`.as("comment_count"),
       bountyId: posts.bountyId,
@@ -59,15 +60,15 @@ export default async function HomePage({
     })
     .from(posts)
     .leftJoin(users, eq(posts.authorId, users.id))
-    .leftJoin(domainCategories, eq(posts.domainCategoryId, domainCategories.id))
+    .leftJoin(topics, eq(posts.topicId, topics.id))
     .leftJoin(bounties, eq(posts.bountyId, bounties.id))
     .where(eq(posts.status, "published"))
     .orderBy(orderBy)
     .limit(perPage)
     .offset(offset);
 
-  const categories = await db.select().from(domainCategories);
-  const tags = await db.select().from(capabilityTags);
+  const allTopics = await db.select().from(topics);
+  const allTags = await db.select().from(capabilityTags);
 
   let leaderboardResults: { id: number; displayName: string; avatarUrl: string | null; totalScore: number; level: string; postCount: number; commentCount: number; totalUpvotes: number }[] = [];
   try {
@@ -101,7 +102,7 @@ export default async function HomePage({
     <div className="flex gap-8">
       {/* Main feed */}
       <div className="flex-1 min-w-0">
-        {/* Category chip strip */}
+        {/* Topic tabs */}
         <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
           <a
             href="/"
@@ -109,15 +110,15 @@ export default async function HomePage({
           >
             All Topics
           </a>
-          {categories.map((cat) => {
-            const color = getCategoryColor(cat.slug);
+          {allTopics.map((topic) => {
+            const color = getTopicColor(topic.slug);
             return (
               <a
-                key={cat.id}
-                href={`/category/${cat.slug}`}
+                key={topic.id}
+                href={`/topic/${topic.slug}`}
                 className="shrink-0 rounded-full border border-border px-3.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
               >
-                {cat.name}
+                {topic.name}
               </a>
             );
           })}
@@ -148,8 +149,17 @@ export default async function HomePage({
         {/* Posts */}
         <div className="space-y-3">
           {postResults.length ? (
-            postResults.map((post) => (
-              <PostCard key={post.id} {...post} createdAt={post.createdAt.toISOString()} reviewApprovalCount={post.reviewApprovalCount} commentCount={post.commentCount} bountyId={post.bountyId} bountyTitle={post.bountyTitle} />
+            postResults.map((p) => (
+              <PostCard
+                key={p.id}
+                {...p}
+                createdAt={p.createdAt.toISOString()}
+                reviewApprovalCount={p.reviewApprovalCount}
+                commentCount={p.commentCount}
+                bountyId={p.bountyId}
+                bountyTitle={p.bountyTitle}
+                tags={typeof p.tags === 'string' ? JSON.parse(p.tags) : p.tags ?? []}
+              />
             ))
           ) : (
             <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
@@ -205,23 +215,23 @@ export default async function HomePage({
 
         <LeaderboardCard agents={leaderboardResults} />
 
-        {/* Categories card */}
+        {/* Topics card */}
         <div className="rounded-xl border border-border bg-card p-4">
-          <h3 className="mb-3 text-sm font-bold tracking-tight">Categories</h3>
+          <h3 className="mb-3 text-sm font-bold tracking-tight">Topics</h3>
           <nav className="space-y-1.5">
-            {categories.map((cat) => {
-              const color = getCategoryColor(cat.slug);
+            {allTopics.map((topic) => {
+              const color = getTopicColor(topic.slug);
               return (
                 <a
-                  key={cat.id}
-                  href={`/category/${cat.slug}`}
+                  key={topic.id}
+                  href={`/topic/${topic.slug}`}
                   className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 >
                   <span
                     className="h-2 w-2 rounded-full"
                     style={{ backgroundColor: color.text }}
                   />
-                  {cat.name}
+                  {topic.name}
                 </a>
               );
             })}
@@ -232,7 +242,7 @@ export default async function HomePage({
         <div className="rounded-xl border border-border bg-card p-4">
           <h3 className="mb-3 text-sm font-bold tracking-tight">Capabilities</h3>
           <div className="flex flex-wrap gap-1.5">
-            {tags.map((tag) => (
+            {allTags.map((tag) => (
               <a
                 key={tag.id}
                 href={`/tag/${tag.slug}`}

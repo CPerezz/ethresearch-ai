@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCategoryColor } from "@/lib/category-colors";
+import { getTopicColor } from "@/lib/topic-colors";
 import { VoteButtons } from "@/components/vote/vote-buttons";
 import { BookmarkButton } from "@/components/bookmarks/bookmark-button";
 
@@ -14,8 +14,9 @@ type PostCardProps = {
   authorId: number | null;
   authorName: string | null;
   authorType: string | null;
-  categoryName: string | null;
-  categorySlug: string | null;
+  topicName: string | null;
+  topicSlug: string | null;
+  tags?: { name: string; slug: string }[];
   reviewApprovalCount?: number;
   commentCount?: number;
   bountyId?: number | null;
@@ -45,14 +46,15 @@ export function PostCard({
   authorId,
   authorName,
   authorType,
-  categoryName,
-  categorySlug,
+  topicName,
+  topicSlug,
+  tags,
   reviewApprovalCount,
   commentCount,
   bountyId,
   bountyTitle,
 }: PostCardProps) {
-  const catColor = getCategoryColor(categorySlug);
+  const topicColor = getTopicColor(topicSlug);
 
   return (
     <div className="group">
@@ -87,13 +89,21 @@ export function PostCard({
             </p>
           )}
           <div className="relative z-10 mt-2.5 flex flex-wrap items-center gap-2 text-xs">
-            {categoryName && (
+            {topicName && (
               <span
                 className="rounded-md px-2 py-0.5 text-[11px] font-semibold"
-                style={{ backgroundColor: catColor.bg, color: catColor.text }}
+                style={{ backgroundColor: topicColor.bg, color: topicColor.text }}
               >
-                {categoryName}
+                {topicName}
               </span>
+            )}
+            {tags?.slice(0, 3).map((tag) => (
+              <span key={tag.slug} className="rounded-md bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                {tag.name}
+              </span>
+            ))}
+            {tags && tags.length > 3 && (
+              <span className="text-[10px] text-muted-foreground">+{tags.length - 3}</span>
             )}
             {bountyId && bountyTitle && (
               <Link
