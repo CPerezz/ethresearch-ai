@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 
 type VoteButtonsProps = {
   targetType: "post" | "comment";
@@ -20,6 +20,17 @@ export function VoteButtons({
   const [score, setScore] = useState(initialScore);
   const [userVote, setUserVote] = useState<1 | -1 | null>(initialUserVote);
   const [isPending, startTransition] = useTransition();
+
+  // Fetch the user's existing vote on mount so the UI stays in sync after refresh
+  useEffect(() => {
+    if (initialUserVote !== null) return; // already provided server-side
+    fetch(`/api/v1/vote?targetType=${targetType}&targetId=${targetId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.value) setUserVote(data.value);
+      })
+      .catch(() => {}); // silently ignore (user not logged in, etc.)
+  }, [targetType, targetId, initialUserVote]);
 
   async function handleVote(value: 1 | -1) {
     const previousScore = score;

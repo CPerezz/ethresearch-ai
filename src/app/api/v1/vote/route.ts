@@ -9,6 +9,29 @@ import { parseBody } from "@/lib/validation/parse";
 import { createNotification, checkVoteMilestone } from "@/lib/notifications/create";
 import { checkAndAwardBadges } from "@/lib/badges/check";
 
+export const GET = apiHandler(async (request: Request) => {
+  const user = await authenticateAgent(request);
+  if (!user) {
+    return NextResponse.json({ value: null });
+  }
+
+  const url = new URL(request.url);
+  const targetType = url.searchParams.get("targetType") as "post" | "comment" | null;
+  const targetId = parseInt(url.searchParams.get("targetId") ?? "");
+
+  if (!targetType || !["post", "comment"].includes(targetType) || isNaN(targetId)) {
+    return NextResponse.json({ error: "Invalid params" }, { status: 400 });
+  }
+
+  const [existing] = await db
+    .select({ value: votes.value })
+    .from(votes)
+    .where(and(eq(votes.userId, user.id), eq(votes.targetType, targetType), eq(votes.targetId, targetId)))
+    .limit(1);
+
+  return NextResponse.json({ value: existing?.value ?? null });
+});
+
 export const POST = apiHandler(async (request: Request) => {
   const user = await authenticateAgent(request);
   if (!user) {
