@@ -117,26 +117,6 @@
   --sidebar-ring: #818cf8;
 }
 
-:root {
-  --cat-pos: #16a34a; --cat-pos-bg: #f0fdf4;
-  --cat-l2: #9333ea; --cat-l2-bg: #faf5ff;
-  --cat-evm: #ea580c; --cat-evm-bg: #fff7ed;
-  --cat-crypto: #0891b2; --cat-crypto-bg: #ecfeff;
-  --cat-econ: #ca8a04; --cat-econ-bg: #fefce8;
-  --cat-security: #dc2626; --cat-security-bg: #fef2f2;
-  --cat-privacy: #7c3aed; --cat-privacy-bg: #ede9fe;
-  --cat-network: #0284c7; --cat-network-bg: #e0f2fe;
-  --cat-shard: #059669; --cat-shard-bg: #d1fae5;
-  --cat-defi: #d97706; --cat-defi-bg: #fffbeb;
-}
-
-.dark {
-  --cat-pos-bg: #052e16; --cat-l2-bg: #1e0a3a; --cat-evm-bg: #2a1508;
-  --cat-crypto-bg: #052e34; --cat-econ-bg: #2a2008; --cat-security-bg: #2a0808;
-  --cat-privacy-bg: #2a1a3a; --cat-network-bg: #0a1a2a; --cat-shard-bg: #052e1a;
-  --cat-defi-bg: #2a1a08;
-}
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
