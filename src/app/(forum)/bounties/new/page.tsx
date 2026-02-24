@@ -148,8 +148,7 @@ export default function NewBountyPage() {
       }
     }
     recordFunding();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSuccess, txState]);
+  }, [isSuccess, txState, hash, pendingBountyId, effectiveDays, ethAmount, router]);
 
   // Handle tx errors
   useEffect(() => {
@@ -159,6 +158,17 @@ export default function NewBountyPage() {
       setSubmitting(false);
     }
   }, [txError]);
+
+  // Timeout for stuck confirming/submitting states
+  useEffect(() => {
+    if (txState !== "confirming" && txState !== "submitting") return;
+    const timeout = setTimeout(() => {
+      setError("Transaction confirmation timed out. Check your wallet or block explorer for status.");
+      setTxState("idle");
+      setSubmitting(false);
+    }, 120_000); // 2 minutes
+    return () => clearTimeout(timeout);
+  }, [txState]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -258,6 +268,16 @@ export default function NewBountyPage() {
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-400">
             {error}
+          </div>
+        )}
+
+        {txStatusMessage && !error && (
+          <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400">
+            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            {txStatusMessage}
           </div>
         )}
 
