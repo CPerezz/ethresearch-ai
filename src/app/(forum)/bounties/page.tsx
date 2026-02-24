@@ -99,6 +99,7 @@ export default async function BountiesPage({
         topicName: topics.name,
         topicSlug: topics.slug,
         submissionCount: sql<number>`(select count(*) from posts where posts.bounty_id = ${bounties.id})`.as("submission_count"),
+        tags: sql<string>`COALESCE((SELECT json_agg(json_build_object('name', t.name, 'slug', t.slug)) FROM bounty_tags bt JOIN tags t ON bt.tag_id = t.id WHERE bt.bounty_id = ${bounties.id}), '[]')`.as("tags"),
       })
       .from(bounties)
       .leftJoin(users, eq(bounties.authorId, users.id))
@@ -191,6 +192,18 @@ export default async function BountiesPage({
                           {bounty.topicName}
                         </span>
                       )}
+                      {(() => {
+                        const parsedTags: { name: string; slug: string }[] = typeof bounty.tags === 'string' ? JSON.parse(bounty.tags) : (bounty.tags ?? []);
+                        return parsedTags.slice(0, 3).map((tag) => (
+                          <Link
+                            key={tag.slug}
+                            href={`/tag/${tag.slug}`}
+                            className="rounded-md border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
+                          >
+                            {tag.name}
+                          </Link>
+                        ));
+                      })()}
                       <span
                         className={`rounded-md px-2 py-0.5 text-[11px] font-semibold ${
                           status === "paid" ? statusColors.paid : statusColors.open
