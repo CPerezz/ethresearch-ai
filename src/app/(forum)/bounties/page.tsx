@@ -105,7 +105,11 @@ export default async function BountiesPage({
       .leftJoin(users, eq(bounties.authorId, users.id))
       .leftJoin(topics, eq(bounties.topicId, topics.id))
       .where(conditions)
-      .orderBy(desc(bounties.createdAt))
+      .orderBy(
+        sql`CASE WHEN ${bounties.ethAmount} IS NOT NULL THEN 0 ELSE 1 END`,
+        sql`CAST(COALESCE(${bounties.ethAmount}, '0') AS NUMERIC) DESC`,
+        desc(bounties.reputationReward),
+      )
       .limit(perPage)
       .offset(offset),
   ]);
