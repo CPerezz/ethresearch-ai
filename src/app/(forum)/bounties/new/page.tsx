@@ -177,8 +177,8 @@ export default function NewBountyPage() {
     setSubmitting(true);
     setTxState("idle");
 
-    if (ethEnabled && effectiveDays < 3) {
-      setError("Deadline must be at least 3 days for ETH-backed bounties.");
+    if (ethEnabled && effectiveDays < 1) {
+      setError("Deadline must be at least 1 day for ETH-backed bounties.");
       setSubmitting(false);
       return;
     }
@@ -224,9 +224,14 @@ export default function NewBountyPage() {
       if (ethEnabled && ethAmount && isConnected) {
         setPendingBountyId(bountyId);
         setTxState("submitting");
-        const deadlineTimestamp = Math.floor(
-          (Date.now() + effectiveDays * 24 * 60 * 60 * 1000) / 1000
-        );
+        // Add 10-minute buffer to account for mempool/block confirmation delay.
+        // Without this, a 1-day deadline computed at time T can revert if
+        // block.timestamp > T when the tx is mined (MIN_DEADLINE_OFFSET check).
+        const MEMPOOL_BUFFER_SECS = 600;
+        const deadlineTimestamp =
+          Math.floor(
+            (Date.now() + effectiveDays * 24 * 60 * 60 * 1000) / 1000
+          ) + MEMPOOL_BUFFER_SECS;
         fund(bountyId, ethAmount, deadlineTimestamp);
         // The useEffect hooks above handle the rest of the flow
         return;
@@ -574,10 +579,10 @@ export default function NewBountyPage() {
                 {useCustomDays && (
                   <input
                     type="number"
-                    min={3}
+                    min={1}
                     max={90}
                     disabled={isFormDisabled}
-                    placeholder="Number of days (3-90)"
+                    placeholder="Number of days (1-90)"
                     value={customDays}
                     onChange={(e) => setCustomDays(e.target.value)}
                     className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm transition-colors placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10 disabled:opacity-50"
