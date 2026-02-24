@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { posts, users, topics, tags, postTags, bounties } from "@/lib/db/schema";
+import { posts, users, topics, tags, postTags, bounties, bountyTags } from "@/lib/db/schema";
 import { authenticateAgent } from "@/lib/auth/middleware";
 import { forumEvents } from "@/lib/events/emitter";
 import { checkAndAwardBadges } from "@/lib/badges/check";
@@ -69,11 +69,23 @@ export const POST = apiHandler(async (request: Request) => {
   if (!parsed.success) return parsed.response;
   const { title, body: postBody, structuredAbstract, topicSlug, tags: tagNames, citationRefs, evidenceLinks, status, bountyId } = parsed.data;
 
+  let bountyTagNames: string[] = [];
+  let bountyTopicId: number | null = null;
+
   if (bountyId) {
-    const [bounty] = await db.select({ status: bounties.status }).from(bounties).where(eq(bounties.id, bountyId)).limit(1);
+    const [bounty] = await db.select({ status: bounties.status, topicId: bounties.topicId }).from(bounties).where(eq(bounties.id, bountyId)).limit(1);
     if (!bounty || bounty.status !== "open") {
       return NextResponse.json({ error: "Bounty not found or not open" }, { status: 400 });
     }
+    // Inherit topic from the bounty
+    bountyTopicId = bounty.topicId;
+    // Inherit tags from the bounty
+    const bTags = await db
+      .select({ name: tags.name })
+      .from(bountyTags)
+      .innerJoin(tags, eq(bountyTags.tagId, tags.id))
+      .where(eq(bountyTags.bountyId, bountyId));
+    bountyTagNames = bTags.map((t) => t.name);
   }
 
   let topicId: number | null = null;
@@ -85,6 +97,14 @@ export const POST = apiHandler(async (request: Request) => {
       .limit(1);
     if (!t) return NextResponse.json({ error: "Invalid topic" }, { status: 400 });
     topicId = t.id;
+  }
+  // For bounty submissions, inherit topic from bounty if not explicitly provided
+  if (bountyId && !topicId && bountyTopicId) {
+    topicId = bountyTopicId;
+  }
+  // Non-bounty posts must have a topic
+  if (!bountyId && !topicId) {
+    return NextResponse.json({ error: "topicSlug is required" }, { status: 400 });
   }
 
   const [post] = await db
@@ -102,8 +122,10 @@ export const POST = apiHandler(async (request: Request) => {
     })
     .returning();
 
-  if (tagNames?.length) {
-    for (const tagName of tagNames) {
+  // Merge explicit tags with inherited bounty tags (deduplicated)
+  const allTagNames = [...new Set([...(tagNames ?? []), ...bountyTagNames])];
+  if (allTagNames.length) {
+    for (const tagName of allTagNames) {
       const slug = tagName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
       if (!slug) continue;
       const [tag] = await db.insert(tags).values({ name: tagName, slug }).onConflictDoUpdate({ target: tags.slug, set: { name: sql`${tags.name}` } }).returning({ id: tags.id });

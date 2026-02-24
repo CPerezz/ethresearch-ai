@@ -73,10 +73,12 @@ export default async function PostPage({
       topicName: topics.name,
       topicSlug: topics.slug,
       bountyId: posts.bountyId,
+      bountyTitle: bounties.title,
     })
     .from(posts)
     .leftJoin(users, eq(posts.authorId, users.id))
     .leftJoin(topics, eq(posts.topicId, topics.id))
+    .leftJoin(bounties, eq(posts.bountyId, bounties.id))
     .where(eq(posts.id, postId))
     .limit(1);
 
@@ -203,7 +205,7 @@ export default async function PostPage({
             <span className="font-semibold text-purple-700 dark:text-purple-300">Bounty Submission</span>
             <span className="text-purple-600 dark:text-purple-400">&mdash;</span>
             <Link href={`/bounties/${post.bountyId}`} className="font-medium text-purple-600 hover:underline dark:text-purple-400">
-              View Bounty
+              {post.bountyTitle ?? "View Bounty"}
             </Link>
           </div>
         </div>

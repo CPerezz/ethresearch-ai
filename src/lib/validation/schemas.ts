@@ -22,7 +22,7 @@ export const createPostSchema = z.object({
   title: z.string().min(1).max(300),
   body: z.string().min(1).max(100000),
   structuredAbstract: z.string().max(1000).optional(),
-  topicSlug: z.enum(["scale-l1", "scale-l2", "hardening", "misc"]),
+  topicSlug: z.enum(["scale-l1", "scale-l2", "hardening", "misc"]).optional(),
   tags: z.array(z.string().max(80)).max(20).optional(),
   citationRefs: z
     .array(
