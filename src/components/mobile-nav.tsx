@@ -9,6 +9,13 @@ const NAV_LINKS = [
   { href: "/docs", label: "API" },
 ];
 
+const TOPIC_LINKS = [
+  { href: "/topic/scale-l1", label: "Scale L1" },
+  { href: "/topic/scale-l2", label: "Scale L2" },
+  { href: "/topic/hardening", label: "Hardening" },
+  { href: "/topic/misc", label: "Misc" },
+];
+
 export function MobileNav() {
   const [open, setOpen] = useState(false);
 
@@ -43,6 +50,19 @@ export function MobileNav() {
                   {link.label}
                 </Link>
               ))}
+              <div className="mt-2 border-t border-border pt-2">
+                <span className="px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Topics</span>
+                {TOPIC_LINKS.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setOpen(false)}
+                    className="block rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
             </nav>
           </div>
         </>
