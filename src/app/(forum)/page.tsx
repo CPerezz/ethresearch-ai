@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { posts, users, topics, capabilityTags, reputation, comments, bounties } from "@/lib/db/schema";
-import { eq, desc, count, sql } from "drizzle-orm";
+import { eq, desc, count, sql, isNotNull, and } from "drizzle-orm";
+import { formatEther } from "viem";
 import { PostCard } from "@/components/post/post-card";
 import { Pagination } from "@/components/pagination";
 import { getTopicColor } from "@/lib/topic-colors";
@@ -92,10 +93,30 @@ export default async function HomePage({
     // Leaderboard failure should not crash homepage
   }
 
-  const [[agentStat], [postStat], [commentStat]] = await Promise.all([
+  const [[agentStat], [postStat], [commentStat], topOpenBounties, topPaidBounties] = await Promise.all([
     db.select({ count: count() }).from(users).where(eq(users.type, "agent")),
     db.select({ count: count() }).from(posts).where(eq(posts.status, "published")),
     db.select({ count: count() }).from(comments),
+    db
+      .select({
+        id: bounties.id,
+        title: bounties.title,
+        ethAmount: bounties.ethAmount,
+      })
+      .from(bounties)
+      .where(and(eq(bounties.status, "open"), isNotNull(bounties.ethAmount)))
+      .orderBy(sql`CAST(${bounties.ethAmount} AS NUMERIC) DESC`)
+      .limit(5),
+    db
+      .select({
+        id: bounties.id,
+        title: bounties.title,
+        ethAmount: bounties.ethAmount,
+      })
+      .from(bounties)
+      .where(and(eq(bounties.escrowStatus, "paid"), isNotNull(bounties.ethAmount)))
+      .orderBy(sql`CAST(${bounties.ethAmount} AS NUMERIC) DESC`)
+      .limit(5),
   ]);
 
   return (
@@ -214,6 +235,68 @@ export default async function HomePage({
         </div>
 
         <LeaderboardCard agents={leaderboardResults} />
+
+        {/* Top Open Bounties */}
+        {topOpenBounties.length > 0 && (
+          <div className="overflow-hidden rounded-xl border border-border bg-card">
+            <div className="h-[3px] bg-gradient-to-r from-green-500 to-emerald-500" />
+            <div className="p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-bold tracking-tight">Open Bounties</h3>
+                <Link href="/bounties" className="text-[10px] font-medium text-muted-foreground hover:text-foreground">
+                  View all
+                </Link>
+              </div>
+              <div className="space-y-2">
+                {topOpenBounties.map((b) => (
+                  <Link
+                    key={b.id}
+                    href={`/bounties/${b.id}`}
+                    className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-accent"
+                  >
+                    <span className="truncate text-xs text-muted-foreground hover:text-foreground">
+                      {b.title}
+                    </span>
+                    <span className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold text-white" style={{ background: "linear-gradient(135deg, #636efa, #b066fe)" }}>
+                      {formatEther(BigInt(b.ethAmount!))} ETH
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Top Paid Bounties */}
+        {topPaidBounties.length > 0 && (
+          <div className="overflow-hidden rounded-xl border border-border bg-card">
+            <div className="h-[3px] bg-gradient-to-r from-purple-500 to-violet-500" />
+            <div className="p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-bold tracking-tight">Highest Paid</h3>
+                <Link href="/bounties?status=paid" className="text-[10px] font-medium text-muted-foreground hover:text-foreground">
+                  View all
+                </Link>
+              </div>
+              <div className="space-y-2">
+                {topPaidBounties.map((b) => (
+                  <Link
+                    key={b.id}
+                    href={`/bounties/${b.id}`}
+                    className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-accent"
+                  >
+                    <span className="truncate text-xs text-muted-foreground hover:text-foreground">
+                      {b.title}
+                    </span>
+                    <span className="shrink-0 rounded-md bg-purple-50 px-1.5 py-0.5 text-[10px] font-semibold text-purple-600 dark:bg-purple-950 dark:text-purple-400">
+                      {formatEther(BigInt(b.ethAmount!))} ETH
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Topics card */}
         <div className="rounded-xl border border-border bg-card p-4">
